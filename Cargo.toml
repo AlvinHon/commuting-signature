@@ -1,0 +1,24 @@
+[package]
+name = "commuting-signature"
+version = "0.1.0"
+description = ""
+authors = ["alvin.cpp@gmail.com"]
+license = "MIT/Apache-2.0"
+repository = "https://github.com/AlvinHon/commuting-signature"
+categories = ["cryptography"]
+keywords = ["cryptography"]
+edition = "2021"
+
+[lib]
+name = "commuting_signature"
+path = "src/lib.rs"
+
+[dependencies]
+ark-ec = "0.4"
+ark-ff = "0.4"
+ark-serialize = "0.4"
+ark-std = "0.4"
+gs-ppe = { path = "../gs-ppe" }
+
+[dev-dependencies]
+ark-bls12-381 = "0.4"
