@@ -7,6 +7,9 @@ pub use commit::Commitment;
 pub mod params;
 pub use params::Params;
 
+pub mod sigcom;
+pub use sigcom::SigCommitment;
+
 #[cfg(test)]
 mod test {
     use ark_bls12_381::Bls12_381 as E;
@@ -25,6 +28,9 @@ mod test {
 
         let m = Message::new(&pp.pps, Fr::rand(rng));
         let com_m = Commitment::<E>::new(rng, &pp, &m);
-        com_m.randomize(rng, &pp);
+        let com_m = com_m.randomize(rng, &pp);
+
+        let (_vk, sk) = automorphic_signature::key_gen(rng, &pp.pps);
+        SigCommitment::<E>::new(rng, pp, &sk, &com_m);
     }
 }

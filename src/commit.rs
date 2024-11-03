@@ -1,22 +1,22 @@
 use ark_ec::pairing::{Pairing, PairingOutput};
 use ark_ff::{One, Zero};
 use ark_std::{rand::Rng, UniformRand};
-use gs_ppe::{Com, Equation, Matrix, Variable};
+use gs_ppe::{Com, Equation, Matrix, Proof, Variable};
 use std::ops::{Mul, Neg};
 
 use crate::{Message, Params};
 
 pub struct Commitment<E: Pairing> {
-    c_m: Com<<E as Pairing>::G1>,
-    c_n: Com<<E as Pairing>::G2>,
-    pi_mn: gs_ppe::Proof<E>,
+    pub(crate) c_m: Com<<E as Pairing>::G1>,
+    pub(crate) c_n: Com<<E as Pairing>::G2>,
+    pub(crate) pi_mn: Proof<E>,
 
-    c_p: Com<<E as Pairing>::G1>,
-    c_q: Com<<E as Pairing>::G2>,
-    pi_pq: gs_ppe::Proof<E>,
+    pub(crate) c_p: Com<<E as Pairing>::G1>,
+    pub(crate) c_q: Com<<E as Pairing>::G2>,
+    pub(crate) pi_pq: Proof<E>,
 
-    u: <E as Pairing>::G1Affine,
-    pi_u: gs_ppe::Proof<E>,
+    pub(crate) u: <E as Pairing>::G1Affine,
+    pub(crate) pi_u: Proof<E>,
 }
 
 impl<E: Pairing> Commitment<E> {

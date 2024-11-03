@@ -3,13 +3,20 @@ use ark_ff::One;
 use ark_std::{rand::Rng, UniformRand};
 use std::ops::Mul;
 
-use super::{key_gen, message::Message, Params, ParamsEx, Signature, SignatureEx, Signatures};
+use super::{
+    key_gen, message::Message, DHGenerators, Params, ParamsEx, Signature, SignatureEx, Signatures,
+    VerifyingKey,
+};
 
 pub struct SigningKey<E: Pairing> {
     pub(crate) x: E::ScalarField,
 }
 
 impl<E: Pairing> SigningKey<E> {
+    pub fn verifying_key<G: DHGenerators<E>>(&self, grs: &G) -> VerifyingKey<E> {
+        VerifyingKey(grs.g().mul(self.x).into(), grs.h().mul(self.x).into())
+    }
+
     /// Signing function `Sign` defined in Scheme 1. Signs on a message (M, N) = (G^m, H^m) in DH.
     ///
     /// ## Example
@@ -35,8 +42,25 @@ impl<E: Pairing> SigningKey<E> {
     /// assert!(vk.verify(&pp, &mn, &sig));
     /// ```
     pub fn sign<R: Rng>(&self, rng: &mut R, pp: &Params<E>, mn: &Message<E>) -> Signature<E> {
-        let m = &mn.0;
+        self.sign_m(rng, pp, &mn.0)
+    }
 
+    /// Signing function `Sign` defined in Scheme 1. Signs on a message (M, N) = (G^m, H^m) in DH.
+    ///
+    /// Compute (a, b, d, r, s) as follows:
+    /// - `a = (k + t^r + m)^ (1 / (x + c))`
+    /// - `b = f^c`
+    /// - `d = h^c`
+    /// - `r = g^r`
+    /// - `s = h^r`
+    ///
+    /// where `c, r` are random scalars.
+    pub(crate) fn sign_m<R: Rng>(
+        &self,
+        rng: &mut R,
+        pp: &Params<E>,
+        m: &<E as Pairing>::G1Affine,
+    ) -> Signature<E> {
         let rand_c = E::ScalarField::rand(rng);
         let rand_r = E::ScalarField::rand(rng);
 
