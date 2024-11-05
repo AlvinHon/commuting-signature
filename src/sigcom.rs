@@ -12,6 +12,7 @@ use crate::{
     Commitment, Params,
 };
 
+// A verifiably encrypted signature on a committed value.
 pub struct SigCommitment<E: Pairing> {
     pub(crate) c_a: Com<<E as Pairing>::G1>,
     pub(crate) c_b: Com<<E as Pairing>::G1>,
@@ -25,7 +26,12 @@ pub struct SigCommitment<E: Pairing> {
 }
 
 impl<E: Pairing> SigCommitment<E> {
+    /// The function `SigCom` to commit on a signature. It takes a Com commitment and a signing key,
+    /// and produces a verifiably encrypted signature on the committed value.
     pub fn new<R: Rng>(rng: &mut R, pp: Params<E>, sk: &SigningKey<E>, c: &Commitment<E>) -> Self {
+        // verify pi_mn, pi_pq, pi_u
+        assert!(c.verify_proofs(&pp));
+
         let VerifyingKey(_x, y) = sk.verifying_key(&pp.pps);
         let Signature { a, b, d, r, s } = sk.sign_m(rng, &pp.pps, &c.u);
 
