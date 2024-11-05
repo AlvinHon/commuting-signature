@@ -1,10 +1,9 @@
-use ark_ec::pairing::{Pairing, PairingOutput};
-use ark_ff::{One, Zero};
+use ark_ec::pairing::Pairing;
 use ark_std::{rand::Rng, UniformRand};
-use gs_ppe::{Com, Equation, Matrix, Proof, Variable};
-use std::ops::{Mul, Neg};
+use gs_ppe::{Com, Proof, Variable};
+use std::ops::Mul;
 
-use crate::{Message, Params};
+use crate::{equations, Message, Params};
 
 pub struct Commitment<E: Pairing> {
     pub(crate) c_m: Com<<E as Pairing>::G1>,
@@ -31,7 +30,7 @@ impl<E: Pairing> Commitment<E> {
         // c_n = Com(ck, N, _)
         let c_n = pp.cks.v.commit(&n);
         // pi_mn = Prove(ck, E_dh, (M, _), (N, _))
-        let equation_dh = Self::equation_dh(pp);
+        let equation_dh = equations::equation_dh(pp);
         let pi_mn = Proof::new(rng, &pp.cks, &equation_dh, &[m], &[n]);
 
         let p = Variable::<_>::new(rng, pq.0);
@@ -41,14 +40,14 @@ impl<E: Pairing> Commitment<E> {
         // c_q = Com(ck, Q, _)
         let c_q = pp.cks.v.commit(&q);
         // pi_pq = Prove(ck, E_dh, (P, _), (Q, _))
-        let equation_pq = Self::equation_dh(pp);
+        let equation_pq = equations::equation_dh(pp);
         let pi_pq = Proof::new(rng, &pp.cks, &equation_pq, &[p], &[q]);
 
         // u = T^t + M
         let u = (pp.pps.t.mul(scalar_t) + m.value).into();
 
         // pi_u = Prove(ck, E_u, (M, _), (Q, _))
-        let equation_u = Self::equation_u(pp, &u);
+        let equation_u = equations::equation_u(pp, &u);
         let pi_u = Proof::new(rng, &pp.cks, &equation_u, &[m], &[q]);
 
         Commitment {
@@ -84,7 +83,7 @@ impl<E: Pairing> Commitment<E> {
         // mutate c_n -> c_n' in Self
         let c_n = self.c_n.randomize(rng, &pp.cks.v);
         // pi_mn' = RdProof(ck, E_dh, (c_m, _), (c_n, _), pi_mn)
-        let equation_dh = Self::equation_dh(pp);
+        let equation_dh = equations::equation_dh(pp);
         // mutate pi_mn -> pi_mn' in Self
         self.pi_mn
             .randomize(rng, &pp.cks, &equation_dh, &[c_m], &[c_n]);
@@ -95,13 +94,13 @@ impl<E: Pairing> Commitment<E> {
         let c_q_cup = c_q_prime.randomize(rng, &pp.cks.v); // c_q_cup_prime -> c_q'
 
         // pi_pq' = RdProof(ck, E_dh, (c_p_cup, _), (c_q_cup, _), pi_pq)
-        let equation_pq = Self::equation_dh(pp);
+        let equation_pq = equations::equation_dh(pp);
         // mutate pi_pq -> pi_pq' in Self
         self.pi_pq
             .randomize(rng, &pp.cks, &equation_pq, &[c_p_cup], &[c_q_cup]);
 
         // pi_u' = Prove(ck, E_u, (c_m, _), (c_q_cup, _))
-        let equation_u = Self::equation_u(pp, &self.u);
+        let equation_u = equations::equation_u(pp, &self.u);
         // mutate pi_u -> pi_u' in Self
         self.pi_u
             .randomize(rng, &pp.cks, &equation_u, &[c_m], &[c_q_cup]);
@@ -116,30 +115,11 @@ impl<E: Pairing> Commitment<E> {
 
     /// Verifies the proofs (`pi_mn`, `pi_pq` and `pi_u`) of this commitment.
     pub fn verify_proofs(&self, pp: &Params<E>) -> bool {
-        let equation_dh = Self::equation_dh(pp);
-        let equation_u = Self::equation_u(pp, &self.u);
+        let equation_dh = equations::equation_dh(pp);
+        let equation_u = equations::equation_u(pp, &self.u);
 
         equation_dh.verify(&pp.cks, &[self.c_m], &[self.c_n], &self.pi_mn)
             && equation_dh.verify(&pp.cks, &[self.c_p], &[self.c_q], &self.pi_pq)
             && equation_u.verify(&pp.cks, &[self.c_m], &[self.c_q], &self.pi_u)
-    }
-
-    /// E_DH: e(G^-1, Y) e(X, H) = 1
-    fn equation_dh(pp: &Params<E>) -> Equation<E> {
-        Equation::<E>::new(
-            vec![pp.pps.g.mul(E::ScalarField::one().neg()).into()],
-            vec![pp.pps.h],
-            Matrix::new(&[[E::ScalarField::zero()]]),
-            PairingOutput::zero(),
-        )
-    }
-    /// E_u: e(T^-1, Y) e(X, H^-1) = e(U, H)^-1
-    fn equation_u(pp: &Params<E>, u: &<E as Pairing>::G1Affine) -> Equation<E> {
-        Equation::<E>::new(
-            vec![pp.pps.t.mul(E::ScalarField::one().neg()).into()],
-            vec![pp.pps.h.mul(E::ScalarField::one().neg()).into()],
-            Matrix::new(&[[E::ScalarField::zero()]]),
-            E::pairing(u, pp.pps.h).mul(E::ScalarField::one().neg()),
-        )
     }
 }

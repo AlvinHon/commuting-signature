@@ -4,6 +4,8 @@ pub use automorphic_signature::message::Message;
 pub mod commit;
 pub use commit::Commitment;
 
+pub(crate) mod equations;
+
 pub mod params;
 pub use params::Params;
 
@@ -33,7 +35,8 @@ mod test {
         let com_m = com_m.randomize(rng, &pp);
         assert!(com_m.verify_proofs(&pp));
 
-        let (_vk, sk) = automorphic_signature::key_gen(rng, &pp.pps);
-        SigCommitment::<E>::new(rng, pp, &sk, &com_m);
+        let (vk, sk) = automorphic_signature::key_gen(rng, &pp.pps);
+        let sig_com = SigCommitment::<E>::new(rng, &pp, &sk, &com_m);
+        assert!(sig_com.verify_proofs(&pp, &vk, &com_m));
     }
 }
