@@ -4,7 +4,7 @@ use gs_ppe::{Com, Proof, Randomness, Variable};
 
 use crate::{
     automorphic_signature::{Signature, SigningKey, VerifyingKey},
-    equations, Commitment, Params,
+    equations, Commitment, Params, SigRandomness,
 };
 
 // A verifiably encrypted signature on a committed value.
@@ -24,33 +24,35 @@ pub struct SigCommitment<E: Pairing> {
 impl<E: Pairing> SigCommitment<E> {
     /// The function `SigCom` to commit on a signature. It takes a Com commitment and a signing key,
     /// and produces a verifiably encrypted signature on the committed value.
-    pub fn new<R: Rng>(rng: &mut R, pp: &Params<E>, sk: &SigningKey<E>, c: &Commitment<E>) -> Self {
+    pub fn new<R: Rng>(
+        rng: &mut R,
+        pp: &Params<E>,
+        sk: &SigningKey<E>,
+        c: &Commitment<E>,
+        randomness: SigRandomness<E>,
+    ) -> Self {
         // verify pi_mn, pi_pq, pi_u
         assert!(c.verify_proofs(&pp));
 
         let VerifyingKey(_x, y) = sk.verifying_key(&pp.pps);
         let Signature { a, b, d, r, s } = sk.sign_m(rng, &pp.pps, &c.u);
 
-        let rand_a = Randomness::rand(rng);
-        let rand_b = Randomness::rand(rng);
-        let rand_d = Randomness::rand(rng);
-        let rand_r = Randomness::rand(rng);
-        let rand_s = Randomness::rand(rng);
+        let SigRandomness(alpha, beta, delta, rho, sigma) = randomness;
 
         // a = (K + T^r + M)^(1 / (X + C))
-        let a = Variable::with_randomness(a, rand_a);
+        let a = Variable::with_randomness(a, alpha);
         // c_a = Com(ck, A, rand_a)
         let c_a = pp.cks.u.commit(&a);
         // c_b = Com(ck, F^c, rand_b)
-        let b = Variable::with_randomness(b, rand_b);
+        let b = Variable::with_randomness(b, beta);
         let c_b = pp.cks.u.commit(&b);
         // c_a = Com(ck, H^c, rand_d)
-        let d = Variable::with_randomness(d, rand_d);
+        let d = Variable::with_randomness(d, delta);
         let c_d = pp.cks.v.commit(&d);
         // c_r = c_p + Com(ck, G^r, rand_r)
-        let c_r = c.c_p + pp.cks.u.commit(&Variable::with_randomness(r, rand_r));
+        let c_r = c.c_p + pp.cks.u.commit(&Variable::with_randomness(r, rho));
         // c_s = c_q + Com(ck, H^r, rand_s)
-        let c_s = c.c_q + pp.cks.v.commit(&Variable::with_randomness(s, rand_s));
+        let c_s = c.c_q + pp.cks.v.commit(&Variable::with_randomness(s, sigma));
 
         // X1 = a, and Y1 = d
         let e_at = equations::equation_at(y);
@@ -65,7 +67,7 @@ impl<E: Pairing> SigCommitment<E> {
             &pp.cks,
             &e_a,
             &[(c_a, Randomness::zero()), (c.c_m, Randomness::zero())],
-            &[(c_s, rand_s), (c_d, Randomness::zero())],
+            &[(c_s, sigma), (c_d, Randomness::zero())],
         );
 
         // ***
@@ -79,7 +81,7 @@ impl<E: Pairing> SigCommitment<E> {
         let e_r = equations::equation_dh(pp);
         // pi_r = RdProof(ck, E_r = E_dh, (c_r, rand_r), (c_s, rand_s), pi_p)
         let mut pi_r = c.pi_pq.clone();
-        pi_r.randomize(rng, &pp.cks, &e_r, &[(c_r, rand_r)], &[(c_s, rand_s)]);
+        pi_r.randomize(rng, &pp.cks, &e_r, &[(c_r, rho)], &[(c_s, sigma)]);
 
         Self {
             c_a,
@@ -95,6 +97,10 @@ impl<E: Pairing> SigCommitment<E> {
 
     /// Verifies the proofs (`pi_a`, `pi_b` and `pi_r`) of this commitment.
     pub fn verify_proofs(&self, pp: &Params<E>, vk: &VerifyingKey<E>, c: &Commitment<E>) -> bool {
+        if !c.verify_proofs(pp) {
+            return false;
+        }
+
         let y = vk.1;
 
         let e_a = equations::equation_a(&pp, y);

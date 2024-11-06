@@ -1,6 +1,8 @@
 pub mod automorphic_signature;
 pub use automorphic_signature::message::Message;
 
+pub mod adpr;
+
 pub mod commit;
 pub use commit::Commitment;
 
@@ -8,6 +10,9 @@ pub(crate) mod equations;
 
 pub mod params;
 pub use params::Params;
+
+mod randomness;
+pub use randomness::{CommitRandomness, SigRandomness};
 
 pub mod sigcom;
 pub use sigcom::SigCommitment;
@@ -29,14 +34,16 @@ mod test {
         let pp = Params::<E>::rand(rng);
 
         let m = Message::new(&pp.pps, Fr::rand(rng));
-        let com_m = Commitment::<E>::new(rng, &pp, &m);
+        let randomness = CommitRandomness::rand(rng);
+        let com_m = Commitment::<E>::new(rng, &pp, &m, randomness);
         assert!(com_m.verify_proofs(&pp));
 
         let com_m = com_m.randomize(rng, &pp);
         assert!(com_m.verify_proofs(&pp));
 
         let (vk, sk) = automorphic_signature::key_gen(rng, &pp.pps);
-        let sig_com = SigCommitment::<E>::new(rng, &pp, &sk, &com_m);
+        let randomness = SigRandomness::rand(rng);
+        let sig_com = SigCommitment::<E>::new(rng, &pp, &sk, &com_m, randomness);
         assert!(sig_com.verify_proofs(&pp, &vk, &com_m));
     }
 }

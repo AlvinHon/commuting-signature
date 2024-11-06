@@ -3,7 +3,7 @@ use ark_std::{rand::Rng, UniformRand};
 use gs_ppe::{Com, Proof, Variable};
 use std::ops::Mul;
 
-use crate::{equations, Message, Params};
+use crate::{equations, randomness::CommitRandomness, Message, Params};
 
 pub struct Commitment<E: Pairing> {
     pub(crate) c_m: Com<<E as Pairing>::G1>,
@@ -19,12 +19,18 @@ pub struct Commitment<E: Pairing> {
 }
 
 impl<E: Pairing> Commitment<E> {
-    pub fn new<R: Rng>(rng: &mut R, pp: &Params<E>, mn: &Message<E>) -> Self {
-        let scalar_t = E::ScalarField::rand(rng);
-        let pq = Message::<E>::new(&pp.pps, scalar_t);
+    pub fn new<R: Rng>(
+        rng: &mut R,
+        pp: &Params<E>,
+        mn: &Message<E>,
+        randomness: CommitRandomness<E>,
+    ) -> Self {
+        let CommitRandomness(tau, mu, nu, rho, sigma) = randomness;
 
-        let m = Variable::<_>::new(rng, mn.0);
-        let n = Variable::<_>::new(rng, mn.1);
+        let pq = Message::<E>::new(&pp.pps, tau);
+
+        let m = Variable::with_randomness(mn.0, mu);
+        let n = Variable::with_randomness(mn.1, nu);
         // c_m = Com(ck, M, _)
         let c_m = pp.cks.u.commit(&m);
         // c_n = Com(ck, N, _)
@@ -33,8 +39,8 @@ impl<E: Pairing> Commitment<E> {
         let equation_dh = equations::equation_dh(pp);
         let pi_mn = Proof::new(rng, &pp.cks, &equation_dh, &[m], &[n]);
 
-        let p = Variable::<_>::new(rng, pq.0);
-        let q = Variable::<_>::new(rng, pq.1);
+        let p = Variable::with_randomness(pq.0, rho);
+        let q = Variable::with_randomness(pq.1, sigma);
         // c_p = Com(ck, P, _)
         let c_p = pp.cks.u.commit(&p);
         // c_q = Com(ck, Q, _)
@@ -44,7 +50,7 @@ impl<E: Pairing> Commitment<E> {
         let pi_pq = Proof::new(rng, &pp.cks, &equation_pq, &[p], &[q]);
 
         // u = T^t + M
-        let u = (pp.pps.t.mul(scalar_t) + m.value).into();
+        let u = (pp.pps.t.mul(tau) + m.value).into();
 
         // pi_u = Prove(ck, E_u, (M, _), (Q, _))
         let equation_u = equations::equation_u(pp, &u);
