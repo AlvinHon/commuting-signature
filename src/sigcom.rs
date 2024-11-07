@@ -4,21 +4,19 @@ use gs_ppe::{Com, Proof, Randomness, Variable};
 
 use crate::{
     automorphic_signature::{Signature, SigningKey, VerifyingKey},
-    equations, Commitment, Params, SigRandomness,
+    equations,
+    proofs::Proofs,
+    Commitment, Params, SigRandomness,
 };
 
-// A verifiably encrypted signature on a committed value.
+/// Commitment on a signature = (A, B, D, R, S).
 pub struct SigCommitment<E: Pairing> {
-    // (c_a, c_b, c_d, c_r, c_s) are a commitment on the actual signature = (A, B, D, R, S).
-    c_a: Com<<E as Pairing>::G1>,
-    c_b: Com<<E as Pairing>::G1>,
-    c_d: Com<<E as Pairing>::G2>,
-    c_r: Com<<E as Pairing>::G1>,
-    c_s: Com<<E as Pairing>::G2>,
-
-    pi_a: Proof<E>,
-    pi_b: Proof<E>,
-    pi_r: Proof<E>,
+    // (c_a, c_b, c_d, c_r, c_s) are commitments on the actual signature = (A, B, D, R, S).
+    pub(crate) c_a: Com<<E as Pairing>::G1>,
+    pub(crate) c_b: Com<<E as Pairing>::G1>,
+    pub(crate) c_d: Com<<E as Pairing>::G2>,
+    pub(crate) c_r: Com<<E as Pairing>::G1>,
+    pub(crate) c_s: Com<<E as Pairing>::G2>,
 }
 
 impl<E: Pairing> SigCommitment<E> {
@@ -30,9 +28,11 @@ impl<E: Pairing> SigCommitment<E> {
         sk: &SigningKey<E>,
         c: &Commitment<E>,
         randomness: SigRandomness<E>,
-    ) -> Self {
+    ) -> Result<(SigCommitment<E>, Proofs<E>), ()> {
         // verify pi_mn, pi_pq, pi_u
-        assert!(c.verify_proofs(&pp));
+        if !c.verify_proofs(&pp) {
+            return Err(());
+        }
 
         let VerifyingKey(_x, y) = sk.verifying_key(&pp.pps);
         let Signature { a, b, d, r, s } = sk.sign_m(rng, &pp.pps, &c.u);
@@ -83,23 +83,31 @@ impl<E: Pairing> SigCommitment<E> {
         let mut pi_r = c.pi_pq.clone();
         pi_r.randomize(rng, &pp.cks, &e_r, &[(c_r, rho)], &[(c_s, sigma)]);
 
-        Self {
-            c_a,
-            c_b,
-            c_d,
-            c_r,
-            c_s,
-            pi_a,
-            pi_b,
-            pi_r,
-        }
+        Ok((
+            SigCommitment {
+                c_a,
+                c_b,
+                c_d,
+                c_r,
+                c_s,
+            },
+            Proofs(pi_a, pi_b, pi_r),
+        ))
     }
 
     /// Verifies the proofs (`pi_a`, `pi_b` and `pi_r`) of this commitment.
-    pub fn verify_proofs(&self, pp: &Params<E>, vk: &VerifyingKey<E>, c: &Commitment<E>) -> bool {
+    pub fn verify_proofs(
+        &self,
+        pp: &Params<E>,
+        vk: &VerifyingKey<E>,
+        c: &Commitment<E>,
+        pi: &Proofs<E>,
+    ) -> bool {
         if !c.verify_proofs(pp) {
             return false;
         }
+
+        let Proofs(pi_a, pi_b, pi_r) = pi;
 
         let y = vk.1;
 
@@ -107,12 +115,8 @@ impl<E: Pairing> SigCommitment<E> {
         let e_dh = equations::equation_dh(&pp);
         let e_b = equations::equation_b(&pp);
 
-        e_a.verify(
-            &pp.cks,
-            &[self.c_a, c.c_m],
-            &[self.c_s, self.c_d],
-            &self.pi_a,
-        ) && e_b.verify(&pp.cks, &[self.c_b], &[self.c_d], &self.pi_b)
-            && e_dh.verify(&pp.cks, &[self.c_r], &[self.c_s], &self.pi_r)
+        e_a.verify(&pp.cks, &[self.c_a, c.c_m], &[self.c_s, self.c_d], &pi_a)
+            && e_b.verify(&pp.cks, &[self.c_b], &[self.c_d], &pi_b)
+            && e_dh.verify(&pp.cks, &[self.c_r], &[self.c_s], &pi_r)
     }
 }

@@ -1,7 +1,7 @@
 pub mod automorphic_signature;
 pub use automorphic_signature::message::Message;
 
-pub mod adpr;
+pub mod proofs;
 
 pub mod commit;
 pub use commit::Commitment;
@@ -43,7 +43,7 @@ mod test {
 
         let (vk, sk) = automorphic_signature::key_gen(rng, &pp.pps);
         let randomness = SigRandomness::rand(rng);
-        let sig_com = SigCommitment::<E>::new(rng, &pp, &sk, &com_m, randomness);
-        assert!(sig_com.verify_proofs(&pp, &vk, &com_m));
+        let (sig_com, proofs) = SigCommitment::<E>::new(rng, &pp, &sk, &com_m, randomness).unwrap();
+        assert!(sig_com.verify_proofs(&pp, &vk, &com_m, &proofs));
     }
 }
