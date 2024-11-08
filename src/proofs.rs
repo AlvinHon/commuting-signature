@@ -21,7 +21,7 @@ impl<E: Pairing> AdaptProof<E> {
     /// The function `AdPrC`, adapt proof when committing on a signature.
     /// Given a message/signature pair of which one is verifiably encrypted,
     /// produce a proof that it and its associated message are verifiably encrypted.
-    pub fn when_committing_signature<R: Rng>(
+    pub fn committing_signature<R: Rng>(
         rng: &mut R,
         pp: &Params<E>,
         vk: &VerifyingKey<E>,
@@ -68,7 +68,7 @@ impl<E: Pairing> AdaptProof<E> {
     /// The function `AdPrC_M`, adapt proof when committing on a message.
     /// Given a message/signature pair of which one is verifiably encrypted,
     /// produce a proof that it and its associated signature are verifiably encrypted.
-    pub fn when_committing_message<R: Rng>(
+    pub fn committing_message<R: Rng>(
         rng: &mut R,
         pp: &Params<E>,
         vk: &VerifyingKey<E>,
@@ -101,7 +101,7 @@ impl<E: Pairing> AdaptProof<E> {
     /// The function `AdPrDC`, adapt proof when decommitting on a signature.
     /// Given a verifiably encrypted message/signature pair,
     /// produce an adapted proof (`pi_a_bar` in `AdPrC`) that a signature is valid on a committed message.
-    pub fn when_decommitting_signature<R: Rng>(
+    pub fn decommitting_signature<R: Rng>(
         rng: &mut R,
         pp: &Params<E>,
         vk: &VerifyingKey<E>,
@@ -135,7 +135,7 @@ impl<E: Pairing> AdaptProof<E> {
     /// The function `AdPrDC_M`, adapt proof when decommitting on a message.
     /// Given a verifiably encrypted message/signature pair,
     /// produce an adapted proof (`pi_tide` in `AdPrC_M`) that a committed signature is valid on a given message.
-    pub fn when_decommitting_message<R: Rng>(
+    pub fn decommitting_message<R: Rng>(
         rng: &mut R,
         pp: &Params<E>,
         vk: &VerifyingKey<E>,

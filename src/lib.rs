@@ -54,19 +54,12 @@ mod test {
         let committed_sig = pre_sig.to_committed_signature(&pp, com_randomness);
 
         // AdPrDC_M
-        let pi_tide = AdaptProof::when_decommitting_message(
-            rng,
-            &pp,
-            &vk,
-            &mn,
-            com_randomness,
-            &sig_com,
-            &proofs,
-        )
-        .unwrap();
+        let pi_tide =
+            AdaptProof::decommitting_message(rng, &pp, &vk, &mn, com_randomness, &sig_com, &proofs)
+                .unwrap();
 
         // AdPrC_M
-        let pi = AdaptProof::when_committing_message(
+        let pi = AdaptProof::committing_message(
             rng,
             &pp,
             &vk,
@@ -78,20 +71,13 @@ mod test {
         .unwrap();
 
         // AdPrDC
-        let pi_a_bar = AdaptProof::when_decommitting_signature(
-            rng,
-            &pp,
-            &vk,
-            &com_m,
-            &committed_sig,
-            &pi.into(),
-        )
-        .unwrap();
+        let pi_a_bar =
+            AdaptProof::decommitting_signature(rng, &pp, &vk, &com_m, &committed_sig, &pi.into())
+                .unwrap();
 
         // AdPrC
-        let pi =
-            AdaptProof::when_committing_signature(rng, &pp, &vk, &com_m, &committed_sig, &pi_a_bar)
-                .unwrap();
+        let pi = AdaptProof::committing_signature(rng, &pp, &vk, &com_m, &committed_sig, &pi_a_bar)
+            .unwrap();
 
         // pi is a proof that com_m contains a commitment to a message s.t. E_a, E_b, E_r
         assert!(sig_com.verify_proofs(&pp, &vk, &com_m, &pi.into()));
