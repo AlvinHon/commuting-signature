@@ -35,10 +35,10 @@ mod test {
 
         let mn = Message::new(&pp.pps, Fr::rand(rng));
         let commit_randomness = CommitRandomness::rand(rng);
-        let com_m = Commitment::<E>::new(rng, &pp, &mn, commit_randomness);
+        let mut com_m = Commitment::<E>::new(rng, &pp, &mn, commit_randomness);
         assert!(com_m.verify_proofs(&pp));
 
-        let com_m = com_m.randomize(rng, &pp);
+        com_m.randomize(rng, &pp);
         assert!(com_m.verify_proofs(&pp));
 
         let (vk, sk) = automorphic_signature::key_gen(rng, &pp.pps);

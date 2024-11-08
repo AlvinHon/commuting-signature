@@ -5,6 +5,7 @@ use std::ops::Mul;
 
 use crate::{equations, randomness::CommitRandomness, Message, Params};
 
+#[derive(Clone, Debug)]
 pub struct Commitment<E: Pairing> {
     pub(crate) c_m: Com<<E as Pairing>::G1>,
     pub(crate) c_n: Com<<E as Pairing>::G2>,
@@ -68,7 +69,7 @@ impl<E: Pairing> Commitment<E> {
         }
     }
 
-    pub fn randomize<R: Rng>(mut self, rng: &mut R, pp: &Params<E>) -> Self {
+    pub fn randomize<R: Rng>(&mut self, rng: &mut R, pp: &Params<E>) -> CommitRandomness<E> {
         let scalar_t_prime = E::ScalarField::rand(rng);
         // it is still c_p_cup now in this line, but will be mutated later: c_p_cup -> c_p'
         let mut c_p_prime = self.c_p
@@ -86,8 +87,10 @@ impl<E: Pairing> Commitment<E> {
         // c_n' = RdCom(ck, c_n, _)
         // mutate c_m -> c_m' in Self
         let c_m = self.c_m.randomize(rng, &pp.cks.u);
+        let mu_prime = c_m.1;
         // mutate c_n -> c_n' in Self
         let c_n = self.c_n.randomize(rng, &pp.cks.v);
+        let nu_prime = c_n.1;
         // pi_mn' = RdProof(ck, E_dh, (c_m, _), (c_n, _), pi_mn)
         let equation_dh = equations::equation_dh(pp);
         // mutate pi_mn -> pi_mn' in Self
@@ -97,7 +100,9 @@ impl<E: Pairing> Commitment<E> {
         // c_p' = RdCom(ck, c_p_cup, _)
         // c_q' = RdCom(ck, c_q_cup, _)
         let c_p_cup = c_p_prime.randomize(rng, &pp.cks.u); // c_p_cup_prime -> c_p'
+        let rho_prime = c_p_cup.1;
         let c_q_cup = c_q_prime.randomize(rng, &pp.cks.v); // c_q_cup_prime -> c_q'
+        let sigma_prime = c_q_cup.1;
 
         // pi_pq' = RdProof(ck, E_dh, (c_p_cup, _), (c_q_cup, _), pi_pq)
         let equation_pq = equations::equation_dh(pp);
@@ -116,7 +121,7 @@ impl<E: Pairing> Commitment<E> {
         self.c_p = c_p_prime;
         self.c_q = c_q_prime;
 
-        self
+        CommitRandomness(scalar_t_prime, mu_prime, nu_prime, rho_prime, sigma_prime)
     }
 
     /// Verifies the proofs (`pi_mn`, `pi_pq` and `pi_u`) of this commitment.
