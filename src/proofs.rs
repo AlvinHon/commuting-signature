@@ -3,8 +3,8 @@ use ark_std::rand::Rng;
 use gs_ppe::{Proof, Variable};
 
 use crate::{
-    automorphic_signature::{Signature, VerifyingKey},
-    equations, CommitRandomness, Commitment, Message, Params, SigCommitment, SigRandomness,
+    automorphic_signature::VerifyingKey, equations, sigcom::CommittedSignature, CommitRandomness,
+    Commitment, Message, Params, SigCommitment, SigRandomness,
 };
 
 /// (pi_*, pi_b, pi_r)
@@ -26,12 +26,13 @@ impl<E: Pairing> AdaptProof<E> {
         pp: &Params<E>,
         vk: &VerifyingKey<E>,
         c: &Commitment<E>,
-        sig: &Signature<E>,
-        randomness: SigRandomness<E>,
+        // ((A, B, D, R, S), (alpha, beta, delta, rho, sigma))
+        committed_sig: &CommittedSignature<E>,
         pi_a_bar: &Proof<E>,
     ) -> Option<Self> {
         let y = vk.1;
-        let SigRandomness(alpha, beta, delta, rho, sigma) = randomness;
+        let CommittedSignature { sig, randomness } = committed_sig;
+        let SigRandomness(alpha, beta, delta, rho, sigma) = *randomness;
 
         // Verify the proof pi_a_bar that C contains a commitment to m s.t. E_a_bar.
         // i.e. Verify(ck, E_Ver(vk,.,Σ), C, pi_a_bar) = 1
@@ -105,18 +106,22 @@ impl<E: Pairing> AdaptProof<E> {
         pp: &Params<E>,
         vk: &VerifyingKey<E>,
         c: &Commitment<E>,
-        sig: &Signature<E>,
-        randomness: SigRandomness<E>,
+        // ((A, B, D, R, S), (alpha, beta, delta, rho, sigma))
+        committed_sig: &CommittedSignature<E>,
         pi: &Proofs<E>,
     ) -> Option<Proof<E>> {
+        let CommittedSignature { sig, randomness } = committed_sig;
         // Verify the proof pi that C contains a commitment to message s.t. E_a, E_b and E_r.
         // i.e. Verify(ck, E_Ver(vk,.,.), C, Com(ck, Σ, rho), pi) = 1
-        if !SigCommitment::new(pp, sig, randomness).verify_proofs(pp, vk, c, pi) {
+        if !committed_sig
+            .as_sigcommitment(pp)
+            .verify_proofs(pp, vk, c, pi)
+        {
             return None;
         }
 
         let y = vk.1;
-        let SigRandomness(alpha, _, delta, _, sigma) = randomness;
+        let SigRandomness(alpha, _, delta, _, sigma) = *randomness;
         let Proofs(pi_a, _, _) = pi;
 
         let var_a = Variable::with_randomness(sig.a, alpha);
