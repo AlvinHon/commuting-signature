@@ -1,3 +1,5 @@
+use std::ops::Add;
+
 use ark_ec::pairing::Pairing;
 use ark_std::{rand::Rng, UniformRand};
 use gs_ppe::Randomness;
@@ -23,6 +25,20 @@ impl<E: Pairing> CommitRandomness<E> {
     }
 }
 
+impl<E: Pairing> Add for CommitRandomness<E> {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        Self(
+            self.0 + other.0,
+            self.1 + other.1,
+            self.2 + other.2,
+            self.3 + other.3,
+            self.4 + other.4,
+        )
+    }
+}
+
 /// (alpha, beta, delta, rho, sigma)
 #[derive(Copy, Clone, Debug)]
 pub struct SigRandomness<E: Pairing>(
@@ -41,6 +57,20 @@ impl<E: Pairing> SigRandomness<E> {
             Randomness::rand(rng),
             Randomness::rand(rng),
             Randomness::rand(rng),
+        )
+    }
+}
+
+impl<E: Pairing> Add for SigRandomness<E> {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        Self(
+            self.0 + other.0,
+            self.1 + other.1,
+            self.2 + other.2,
+            self.3 + other.3,
+            self.4 + other.4,
         )
     }
 }
