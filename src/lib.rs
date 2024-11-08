@@ -33,17 +33,18 @@ mod test {
         let rng = &mut test_rng();
         let pp = Params::<E>::rand(rng);
 
-        let m = Message::new(&pp.pps, Fr::rand(rng));
-        let randomness = CommitRandomness::rand(rng);
-        let com_m = Commitment::<E>::new(rng, &pp, &m, randomness);
+        let mn = Message::new(&pp.pps, Fr::rand(rng));
+        let commit_randomness = CommitRandomness::rand(rng);
+        let com_m = Commitment::<E>::new(rng, &pp, &mn, commit_randomness);
         assert!(com_m.verify_proofs(&pp));
 
         let com_m = com_m.randomize(rng, &pp);
         assert!(com_m.verify_proofs(&pp));
 
         let (vk, sk) = automorphic_signature::key_gen(rng, &pp.pps);
-        let randomness = SigRandomness::rand(rng);
-        let (sig_com, proofs) = SigCommitment::<E>::new(rng, &pp, &sk, &com_m, randomness).unwrap();
+        let sig_randomness = SigRandomness::rand(rng);
+        let (sig_com, proofs) =
+            SigCommitment::<E>::new_with_proofs(rng, &pp, &sk, &com_m, sig_randomness).unwrap();
         assert!(sig_com.verify_proofs(&pp, &vk, &com_m, &proofs));
     }
 }

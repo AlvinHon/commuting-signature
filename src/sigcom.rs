@@ -20,23 +20,47 @@ pub struct SigCommitment<E: Pairing> {
 }
 
 impl<E: Pairing> SigCommitment<E> {
+    pub fn new(pp: &Params<E>, sig: &Signature<E>, randomness: SigRandomness<E>) -> Self {
+        let Signature { a, b, d, r, s } = sig;
+        let SigRandomness(alpha, beta, delta, rho, sigma) = randomness;
+
+        let a = Variable::with_randomness(*a, alpha);
+        let b = Variable::with_randomness(*b, beta);
+        let d = Variable::with_randomness(*d, delta);
+        let r = Variable::with_randomness(*r, rho);
+        let s = Variable::with_randomness(*s, sigma);
+
+        let c_a = pp.cks.u.commit(&a);
+        let c_b = pp.cks.u.commit(&b);
+        let c_d = pp.cks.v.commit(&d);
+        let c_r = pp.cks.u.commit(&r);
+        let c_s = pp.cks.v.commit(&s);
+
+        SigCommitment {
+            c_a,
+            c_b,
+            c_d,
+            c_r,
+            c_s,
+        }
+    }
+
     /// The function `SigCom` to commit on a signature. It takes a Com commitment and a signing key,
     /// and produces a verifiably encrypted signature on the committed value.
-    pub fn new<R: Rng>(
+    pub fn new_with_proofs<R: Rng>(
         rng: &mut R,
         pp: &Params<E>,
         sk: &SigningKey<E>,
         c: &Commitment<E>,
         randomness: SigRandomness<E>,
-    ) -> Result<(SigCommitment<E>, Proofs<E>), ()> {
+    ) -> Option<(SigCommitment<E>, Proofs<E>)> {
         // verify pi_mn, pi_pq, pi_u
-        if !c.verify_proofs(&pp) {
-            return Err(());
+        if !c.verify_proofs(pp) {
+            return None;
         }
 
         let VerifyingKey(_x, y) = sk.verifying_key(&pp.pps);
         let Signature { a, b, d, r, s } = sk.sign_m(rng, &pp.pps, &c.u);
-
         let SigRandomness(alpha, beta, delta, rho, sigma) = randomness;
 
         // a = (K + T^r + M)^(1 / (X + C))
@@ -60,7 +84,7 @@ impl<E: Pairing> SigCommitment<E> {
         let mut pi_a = c.pi_u.clone() + Proof::<E>::new(rng, &pp.cks, &e_at, &[a], &[d]);
 
         // X1 = a, X2 = m, Y1 = s, and Y2 = d
-        let e_a = equations::equation_a(&pp, y);
+        let e_a = equations::equation_a(pp, y);
         // pi_a = RdProof(ck, E_a, (c_a, 0), (c_d, 0), (c_m, 0), (c_s, rand_s), pi_a_prime)
         pi_a.randomize(
             rng,
@@ -72,7 +96,7 @@ impl<E: Pairing> SigCommitment<E> {
 
         // ***
         // X1 = b, and Y1 = d
-        let e_b = equations::equation_b(&pp);
+        let e_b = equations::equation_b(pp);
         // pi_b =  Prove(ck, E_dh, (b, rand_b), (d, rand_d))
         let pi_b = Proof::<E>::new(rng, &pp.cks, &e_b, &[b], &[d]);
         assert!(e_b.verify(&pp.cks, &[c_b], &[c_d], &pi_b));
@@ -83,7 +107,7 @@ impl<E: Pairing> SigCommitment<E> {
         let mut pi_r = c.pi_pq.clone();
         pi_r.randomize(rng, &pp.cks, &e_r, &[(c_r, rho)], &[(c_s, sigma)]);
 
-        Ok((
+        Some((
             SigCommitment {
                 c_a,
                 c_b,
@@ -111,12 +135,12 @@ impl<E: Pairing> SigCommitment<E> {
 
         let y = vk.1;
 
-        let e_a = equations::equation_a(&pp, y);
-        let e_dh = equations::equation_dh(&pp);
-        let e_b = equations::equation_b(&pp);
+        let e_a = equations::equation_a(pp, y);
+        let e_dh = equations::equation_dh(pp);
+        let e_b = equations::equation_b(pp);
 
-        e_a.verify(&pp.cks, &[self.c_a, c.c_m], &[self.c_s, self.c_d], &pi_a)
-            && e_b.verify(&pp.cks, &[self.c_b], &[self.c_d], &pi_b)
-            && e_dh.verify(&pp.cks, &[self.c_r], &[self.c_s], &pi_r)
+        e_a.verify(&pp.cks, &[self.c_a, c.c_m], &[self.c_s, self.c_d], pi_a)
+            && e_b.verify(&pp.cks, &[self.c_b], &[self.c_d], pi_b)
+            && e_dh.verify(&pp.cks, &[self.c_r], &[self.c_s], pi_r)
     }
 }
