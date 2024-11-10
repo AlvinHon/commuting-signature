@@ -1,6 +1,5 @@
 use ark_ec::pairing::Pairing;
-use ark_ff::One;
-use ark_std::{rand::Rng, UniformRand};
+use ark_std::{rand::Rng, One, UniformRand};
 use std::ops::Mul;
 
 use super::{

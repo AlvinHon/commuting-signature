@@ -2,7 +2,7 @@ use ark_ec::{
     pairing::{Pairing, PairingOutput},
     AffineRepr,
 };
-use ark_ff::{One, Zero};
+use ark_std::{One, Zero};
 use gs_ppe::{Equation, Matrix};
 use std::ops::{Mul, Neg};
 

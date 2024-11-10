@@ -14,11 +14,10 @@ name = "commuting_signature"
 path = "src/lib.rs"
 
 [dependencies]
-ark-ec = "0.4"
-ark-ff = "0.4"
-ark-serialize = "0.4"
-ark-std = "0.4"
-gs-ppe = { path = "../gs-ppe" }
+ark-ec = "0.5"
+ark-serialize = "0.5"
+ark-std = "0.5"
+gs-ppe = { git = "https://github.com/AlvinHon/gs-ppe"}
 
 [dev-dependencies]
-ark-bls12-381 = "0.4"
+ark-bls12-381 = "0.5"
