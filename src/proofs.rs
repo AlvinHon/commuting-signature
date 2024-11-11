@@ -3,8 +3,12 @@ use ark_std::rand::Rng;
 use gs_ppe::{Proof, Variable};
 
 use crate::{
-    automorphic_signature::VerifyingKey, equations, sigcom::PrecommitSignature, CommitRandomness,
-    Commitment, Message, Params, SigCommitment, SigRandomness,
+    automorphic_signature::VerifyingKey,
+    commit::Commitment,
+    equations,
+    randomness::{CommitRandomness, SigRandomness},
+    sigcom::{PrecommitSignature, SigCommitment},
+    Message, Params,
 };
 
 /// (pi_*, pi_b, pi_r)

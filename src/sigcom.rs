@@ -5,9 +5,11 @@ use std::ops::Mul;
 
 use crate::{
     automorphic_signature::{Signature, SigningKey, VerifyingKey},
+    commit::Commitment,
     equations,
     proofs::Proofs,
-    CommitRandomness, Commitment, Params, SigRandomness,
+    randomness::{CommitRandomness, SigRandomness},
+    Params,
 };
 
 /// The function `SigCom` to commit on a signature. It takes a Com commitment and a signing key,
@@ -23,7 +25,7 @@ pub fn sig_com<E: Pairing, R: Rng>(
         return None;
     }
 
-    let sig_randomness = SigRandomness::<E>::rand(rng);
+    let sig_randomness = SigRandomness::rand(rng);
     let VerifyingKey(_x, y) = sk.verifying_key(&pp.pps);
     let Signature { a, b, d, r, s } = sk.sign_m(rng, &pp.pps, &c.u);
     let SigRandomness(alpha, beta, delta, rho, sigma) = sig_randomness;

@@ -12,6 +12,12 @@ pub struct SigningKey<E: Pairing> {
 }
 
 impl<E: Pairing> SigningKey<E> {
+    pub fn rand<R: Rng>(rng: &mut R) -> Self {
+        Self {
+            x: E::ScalarField::rand(rng),
+        }
+    }
+
     pub fn verifying_key<G: DHGenerators<E>>(&self, grs: &G) -> VerifyingKey<E> {
         VerifyingKey(grs.g().mul(self.x).into(), grs.h().mul(self.x).into())
     }

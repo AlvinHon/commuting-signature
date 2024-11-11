@@ -3,39 +3,41 @@
 pub mod automorphic_signature;
 pub use automorphic_signature::message::Message;
 
-pub mod proofs;
-pub use proofs::{AdaptProof, Proofs};
-
+pub mod ciphertexts;
 pub mod commit;
-pub use commit::Commitment;
-
 pub(crate) mod equations;
-
 pub mod params;
+pub mod proofs;
 pub use params::Params;
-
-mod randomness;
-pub use randomness::{CommitRandomness, SigRandomness};
-
+pub mod randomness;
 pub mod sigcom;
-pub use sigcom::{sig_com, PrecommitSignature, SigCommitment};
+pub mod signer;
+pub use signer::Signer;
+pub mod verifier;
+pub use verifier::Verifier;
 
 #[cfg(test)]
 mod test {
+    use super::{
+        automorphic_signature::{self, Message},
+        commit::Commitment,
+        params::Params,
+        proofs::{prove_message, prove_signature, AdaptProof},
+        randomness::{CommitRandomness, SigRandomness},
+        sigcom::{sig_com, PrecommitSignature},
+    };
+
     use ark_bls12_381::Bls12_381 as E;
     use ark_ec::pairing::Pairing;
     use ark_std::{test_rng, UniformRand};
-    use proofs::{prove_message, prove_signature};
 
     type Fr = <E as Pairing>::ScalarField;
-
-    use super::*;
 
     // Test the upper flow of commuting signatures illustrated in Figure 1 of the paper.
     #[test]
     fn test_sigcom() {
         let rng = &mut test_rng();
-        let pp = Params::<E>::rand(rng);
+        let pp = Params::rand(rng);
         let (vk, sk) = automorphic_signature::key_gen(rng, &pp.pps);
         let mn = Message::new(&pp.pps, Fr::rand(rng));
 
