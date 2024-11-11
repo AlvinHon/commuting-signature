@@ -3,7 +3,7 @@ use ark_std::rand::Rng;
 use gs_ppe::{Proof, Variable};
 
 use crate::{
-    automorphic_signature::VerifyingKey, equations, sigcom::CommittedSignature, CommitRandomness,
+    automorphic_signature::VerifyingKey, equations, sigcom::PrecommitSignature, CommitRandomness,
     Commitment, Message, Params, SigCommitment, SigRandomness,
 };
 
@@ -27,34 +27,39 @@ impl<E: Pairing> AdaptProof<E> {
         vk: &VerifyingKey<E>,
         c: &Commitment<E>,
         // ((A, B, D, R, S), (alpha, beta, delta, rho, sigma))
-        committed_sig: &CommittedSignature<E>,
+        precommit_sig: &PrecommitSignature<E>,
         pi_a_bar: &Proof<E>,
     ) -> Option<Self> {
         let y = vk.1;
-        let CommittedSignature { sig, randomness } = committed_sig;
+        let PrecommitSignature {
+            signature,
+            randomness,
+        } = precommit_sig;
         let SigRandomness(alpha, beta, delta, rho, sigma) = *randomness;
 
         // Verify the proof pi_a_bar that C contains a commitment to m s.t. E_a_bar.
         // i.e. Verify(ck, E_Ver(vk,.,Σ), C, pi_a_bar) = 1
-        let eq_a_bar = equations::equation_a_bar_from_rhs(pp, y, sig.a, sig.d, sig.s);
+        let eq_a_bar =
+            equations::equation_a_bar_from_rhs(pp, y, signature.a, signature.d, signature.s);
         if !eq_a_bar.verify(&pp.cks, &[c.c_m], &[], pi_a_bar) {
             return None;
         }
 
         // Compute pi_a_tide.
-        let var_a = Variable::with_randomness(sig.a, alpha);
-        let var_d = Variable::with_randomness(sig.d, delta);
-        let var_s = Variable::with_randomness(sig.s, sigma);
-        let eq_a_tide = equations::equation_a_tide_from_lhs(pp, sig.s, sig.a, sig.d, y);
+        let var_a = Variable::with_randomness(signature.a, alpha);
+        let var_d = Variable::with_randomness(signature.d, delta);
+        let var_s = Variable::with_randomness(signature.s, sigma);
+        let eq_a_tide =
+            equations::equation_a_tide_from_lhs(pp, signature.s, signature.a, signature.d, y);
         let pi_a_tide = Proof::new(rng, &pp.cks, &eq_a_tide, &[var_a], &[var_s, var_d]);
 
         // Compute pi_b.
-        let var_b = Variable::with_randomness(sig.b, beta);
+        let var_b = Variable::with_randomness(signature.b, beta);
         let eq_b = equations::equation_b(pp);
         let pi_b = Proof::new(rng, &pp.cks, &eq_b, &[var_b], &[var_d]);
 
         // Compute pi_r.
-        let var_r = Variable::with_randomness(sig.r, rho);
+        let var_r = Variable::with_randomness(signature.r, rho);
         let eq_r = equations::equation_dh(pp);
         let pi_r = Proof::new(rng, &pp.cks, &eq_r, &[var_r], &[var_s]);
 
@@ -107,16 +112,16 @@ impl<E: Pairing> AdaptProof<E> {
         vk: &VerifyingKey<E>,
         c: &Commitment<E>,
         // ((A, B, D, R, S), (alpha, beta, delta, rho, sigma))
-        committed_sig: &CommittedSignature<E>,
+        committed_sig: &PrecommitSignature<E>,
         pi: &Proofs<E>,
     ) -> Option<Proof<E>> {
-        let CommittedSignature { sig, randomness } = committed_sig;
+        let PrecommitSignature {
+            signature,
+            randomness,
+        } = committed_sig;
         // Verify the proof pi that C contains a commitment to message s.t. E_a, E_b and E_r.
         // i.e. Verify(ck, E_Ver(vk,.,.), C, Com(ck, Σ, rho), pi) = 1
-        if !committed_sig
-            .as_sigcommitment(pp)
-            .verify_proofs(pp, vk, c, pi)
-        {
+        if !committed_sig.commit(pp).verify_proofs(pp, vk, c, pi) {
             return None;
         }
 
@@ -124,10 +129,11 @@ impl<E: Pairing> AdaptProof<E> {
         let SigRandomness(alpha, _, delta, _, sigma) = *randomness;
         let Proofs(pi_a, _, _) = pi;
 
-        let var_a = Variable::with_randomness(sig.a, alpha);
-        let var_d = Variable::with_randomness(sig.d, delta);
-        let var_s = Variable::with_randomness(sig.s, sigma);
-        let eq_a_tide = equations::equation_a_tide_from_lhs(pp, sig.s, sig.a, sig.d, y);
+        let var_a = Variable::with_randomness(signature.a, alpha);
+        let var_d = Variable::with_randomness(signature.d, delta);
+        let var_s = Variable::with_randomness(signature.s, sigma);
+        let eq_a_tide =
+            equations::equation_a_tide_from_lhs(pp, signature.s, signature.a, signature.d, y);
         let pi_a_tide = Proof::new(rng, &pp.cks, &eq_a_tide, &[var_a], &[var_s, var_d]);
 
         Some(pi_a.clone() / pi_a_tide)
@@ -168,4 +174,60 @@ impl<E: Pairing> From<AdaptProof<E>> for Proofs<E> {
     fn from(adapt_proof: AdaptProof<E>) -> Self {
         Proofs(adapt_proof.pi_a, adapt_proof.pi_b, adapt_proof.pi_r)
     }
+}
+
+/// The `prove` function in Figure 1 in the paper. It is not being used publicly.
+/// It exists for testing purposes.
+#[allow(unused)]
+pub(crate) fn prove_message<E: Pairing, R: Rng>(
+    rng: &mut R,
+    pp: &Params<E>,
+    mn: &Message<E>,
+    com_randomness: CommitRandomness<E>,
+) -> Proof<E> {
+    let m = mn.0;
+    let CommitRandomness(_, mu, _, _, _) = com_randomness;
+
+    let equ_a_bar = equations::equation_a_bar_from_lhs(pp, m);
+    Proof::new(
+        rng,
+        &pp.cks,
+        &equ_a_bar,
+        &[Variable::with_randomness(m, mu)],
+        &[],
+    )
+}
+
+/// The `prove` function in Figure 1 in the paper. It is not being used publicly.
+/// It exists for testing purposes.
+#[allow(unused)]
+pub(crate) fn prove_signature<E: Pairing, R: Rng>(
+    rng: &mut R,
+    pp: &Params<E>,
+    vk: &VerifyingKey<E>,
+    committed_sig: &PrecommitSignature<E>,
+) -> Proofs<E> {
+    let y = vk.1;
+    let PrecommitSignature {
+        signature,
+        randomness,
+    } = committed_sig;
+    let SigRandomness(alpha, beta, delta, rho, sigma) = *randomness;
+
+    let var_a = Variable::with_randomness(signature.a, alpha);
+    let var_d = Variable::with_randomness(signature.d, delta);
+    let var_s = Variable::with_randomness(signature.s, sigma);
+    let equ_a_tide =
+        equations::equation_a_tide_from_lhs(pp, signature.s, signature.a, signature.d, y);
+    let pi_a_tide = Proof::new(rng, &pp.cks, &equ_a_tide, &[var_a], &[var_s, var_d]);
+
+    let var_b = Variable::with_randomness(signature.b, beta);
+    let equ_b = equations::equation_b(pp);
+    let pi_b = Proof::new(rng, &pp.cks, &equ_b, &[var_b], &[var_d]);
+
+    let equ_r = equations::equation_dh(pp);
+    let var_r = Variable::with_randomness(signature.r, rho);
+    let pi_r = Proof::new(rng, &pp.cks, &equ_r, &[var_r], &[var_s]);
+
+    Proofs(pi_a_tide, pi_b, pi_r)
 }

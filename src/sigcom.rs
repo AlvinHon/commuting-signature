@@ -142,15 +142,15 @@ pub struct PreSignature<E: Pairing> {
 
 impl<E: Pairing> PreSignature<E> {
     /// Given the randomness used in message commitment, return:
-    /// 1. the equivalent signature committed by the algorithm `sigcom`. i.e. (A, B, D, R, S)
+    /// 1. the equivalent signature to be committed by the algorithm `sigcom`. i.e. (A, B, D, R, S)
     /// 2. the associated randomness used for the signature commitment. i.e. (alpha, beta, delta, rho, sigma)
-    pub fn to_committed_signature(
+    pub fn to_precommit_signature(
         self,
         pp: &Params<E>,
         com_randomness: CommitRandomness<E>,
-    ) -> CommittedSignature<E> {
+    ) -> PrecommitSignature<E> {
         let tau = com_randomness.0;
-        let sig = Signature {
+        let signature = Signature {
             a: self.a,
             b: self.b,
             d: self.d,
@@ -165,18 +165,21 @@ impl<E: Pairing> PreSignature<E> {
             self.sig_randomness.4 + com_randomness.4,
         );
 
-        CommittedSignature { sig, randomness }
+        PrecommitSignature {
+            signature,
+            randomness,
+        }
     }
 }
 
-pub struct CommittedSignature<E: Pairing> {
-    pub(crate) sig: Signature<E>,
-    pub(crate) randomness: SigRandomness<E>,
+pub struct PrecommitSignature<E: Pairing> {
+    pub signature: Signature<E>,
+    pub randomness: SigRandomness<E>,
 }
 
-impl<E: Pairing> CommittedSignature<E> {
-    pub fn as_sigcommitment(&self, pp: &Params<E>) -> SigCommitment<E> {
-        let Signature { a, b, d, r, s } = self.sig;
+impl<E: Pairing> PrecommitSignature<E> {
+    pub fn commit(&self, pp: &Params<E>) -> SigCommitment<E> {
+        let Signature { a, b, d, r, s } = self.signature;
         let SigRandomness(alpha, beta, delta, rho, sigma) = self.randomness;
 
         let a = Variable::with_randomness(a, alpha);
