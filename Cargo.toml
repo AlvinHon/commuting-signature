@@ -1,12 +1,12 @@
 [package]
 name = "commuting-signature"
 version = "0.1.0"
-description = ""
+description = "Implementation of commuting signatures defined in the paper 'Commuting Signatures and Verifiable Encryption' by Georg Fuchsbauer"
 authors = ["alvin.cpp@gmail.com"]
 license = "MIT/Apache-2.0"
 repository = "https://github.com/AlvinHon/commuting-signature"
 categories = ["cryptography"]
-keywords = ["cryptography"]
+keywords = ["cryptography", "signature", "commitment", "zero-knowledge", "automorphic-signature"]
 edition = "2021"
 
 [lib]
