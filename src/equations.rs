@@ -1,3 +1,5 @@
+//! Defines equations for the proof system.
+
 use ark_ec::{
     pairing::{Pairing, PairingOutput},
     AffineRepr,
@@ -10,6 +12,9 @@ use crate::Params;
 
 /// E_DH: e(G^-1, Y) e(X, H) = 1
 /// It is equivalent to E_r.
+///
+/// Formula (10) in section 8.1 of the paper.
+/// Same as the formula (12) `E_r` in section 8.2 of the paper.
 pub(crate) fn equation_dh<E: Pairing>(pp: &Params<E>) -> Equation<E> {
     Equation::<E>::new(
         vec![pp.pps.g.mul(E::ScalarField::one().neg()).into()],
@@ -18,7 +23,10 @@ pub(crate) fn equation_dh<E: Pairing>(pp: &Params<E>) -> Equation<E> {
         PairingOutput::zero(),
     )
 }
+
 /// E_u: e(T^-1, Y) e(X, H^-1) = e(U, H)^-1
+///
+/// Formula (11) in section 8.1 of the paper.
 pub(crate) fn equation_u<E: Pairing>(pp: &Params<E>, u: &<E as Pairing>::G1Affine) -> Equation<E> {
     Equation::<E>::new(
         vec![pp.pps.t.mul(E::ScalarField::one().neg()).into()],
@@ -29,6 +37,8 @@ pub(crate) fn equation_u<E: Pairing>(pp: &Params<E>, u: &<E as Pairing>::G1Affin
 }
 
 /// Define E_at(A; D) : e(A, Y) e(A, D) = 1, where A and D are variables X1 and Y1.
+///
+/// Formula (14) in section 8.2 of the paper.
 pub(crate) fn equation_at<E: Pairing>(y: <E as Pairing>::G2Affine) -> Equation<E> {
     // From GS Proof notation:
     // e(A1, Y1) e(X1, B1) e(X1, Y1)^1
@@ -46,6 +56,8 @@ pub(crate) fn equation_at<E: Pairing>(y: <E as Pairing>::G2Affine) -> Equation<E
 
 /// Define E_a(A, M; S, D) : e(T^-1, S) e(A, Y) e(M, H^-1) e(A, D) = e(K, H),
 /// where A, M, S, and D are variables X1, X2, Y1, and Y2.
+///
+/// Formula (12) in section 8.2 of the paper.
 pub(crate) fn equation_a<E: Pairing>(pp: &Params<E>, y: <E as Pairing>::G2Affine) -> Equation<E> {
     // From GS Proof notation:
     // e(A1, Y1) e(A2, Y2) e(X1, B1) e(X2, B2) e(X1, Y2)^1
@@ -70,6 +82,8 @@ pub(crate) fn equation_a<E: Pairing>(pp: &Params<E>, y: <E as Pairing>::G2Affine
 }
 
 /// E_b: e(F^-1, Y) e(X, H) = 1
+///
+/// Formula (12) in section 8.2 of the paper.
 pub(crate) fn equation_b<E: Pairing>(pp: &Params<E>) -> Equation<E> {
     Equation::<E>::new(
         vec![pp.pps.f.mul(E::ScalarField::one().neg()).into()],
@@ -83,6 +97,8 @@ pub(crate) fn equation_b<E: Pairing>(pp: &Params<E>) -> Equation<E> {
 /// where A, S, and D are variables X1, Y1, and Y2.
 ///
 /// This should be used in function `AdPrC` but we dont know `m`. So we compute the target from LHS of the equation.
+///
+/// Formula in section 8.3 of the paper.
 pub(crate) fn equation_a_tide_from_lhs<E: Pairing>(
     pp: &Params<E>,
     s: <E as Pairing>::G2Affine,
@@ -109,6 +125,8 @@ pub(crate) fn equation_a_tide_from_lhs<E: Pairing>(
 /// where A, S, and D are variables X1, Y1, and Y2.
 ///
 /// This should be used in function `AdPrC_M`. As `m` is known, we can compute the target from RHS of the equation.
+///
+/// Formula in section 8.3 of the paper.
 pub(crate) fn equation_a_tide_from_rhs<E: Pairing>(
     pp: &Params<E>,
     y: <E as Pairing>::G2Affine,
@@ -131,6 +149,8 @@ pub(crate) fn equation_a_tide_from_rhs<E: Pairing>(
 
 /// Define E_a_bar(M) : e(M, H^-1) = e(A, Y + D)^-1 e(K, H) e(T, S),
 /// where M is variable X1.
+///
+/// Formula in section 8.3 of the paper.
 pub(crate) fn equation_a_bar_from_lhs<E: Pairing>(
     pp: &Params<E>,
     m: <E as Pairing>::G1Affine,
@@ -145,6 +165,8 @@ pub(crate) fn equation_a_bar_from_lhs<E: Pairing>(
 
 /// Define E_a_bar(M) : e(M, H^-1) = e(A, Y + D)^-1 e(K, H) e(T, S),
 /// where M is variable X1.
+///
+/// Formula in section 8.3 of the paper.
 pub(crate) fn equation_a_bar_from_rhs<E: Pairing>(
     pp: &Params<E>,
     y: <E as Pairing>::G2Affine,

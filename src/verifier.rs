@@ -1,3 +1,5 @@
+//! Defines the `Verifier` struct and its methods.
+//!
 use ark_ec::pairing::Pairing;
 
 use crate::{

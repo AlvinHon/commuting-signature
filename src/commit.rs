@@ -1,3 +1,5 @@
+//! Defines the `Commitment` struct, which implements message commitment and its randomization.
+
 use ark_ec::pairing::Pairing;
 use ark_std::{rand::Rng, UniformRand};
 use gs_ppe::{Com, Proof, Variable};
@@ -5,6 +7,9 @@ use std::ops::Mul;
 
 use crate::{equations, randomness::CommitRandomness, Message, Params};
 
+/// Contains the commitments to the message, with proofs for the validity of the committed.
+/// Provides functions `Com_M` and `RdCom_M`, for committing to a message and randomizing the
+/// commitment respectively.
 #[derive(Clone, Debug)]
 pub struct Commitment<E: Pairing> {
     pub(crate) c_m: Com<<E as Pairing>::G1>,
@@ -20,6 +25,8 @@ pub struct Commitment<E: Pairing> {
 }
 
 impl<E: Pairing> Commitment<E> {
+    /// The function `Com_M` defined in section 8.1 of the paper.
+    /// Commit to a message and output commitments (verifiable encrypted) with proofs.
     pub fn new<R: Rng>(
         rng: &mut R,
         pp: &Params<E>,
@@ -69,6 +76,8 @@ impl<E: Pairing> Commitment<E> {
         }
     }
 
+    /// The function `RdCom_M` defined in section 8.1 of the paper.
+    /// Randomize the commitments and proofs of this commitment.
     pub fn randomize<R: Rng>(&mut self, rng: &mut R, pp: &Params<E>) -> CommitRandomness<E> {
         let scalar_t_prime = E::ScalarField::rand(rng);
         // it is still c_p_cup now in this line, but will be mutated later: c_p_cup -> c_p'

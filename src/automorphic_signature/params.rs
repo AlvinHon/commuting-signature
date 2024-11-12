@@ -1,6 +1,7 @@
 use ark_ec::pairing::Pairing;
 use ark_std::{rand::Rng, UniformRand};
 
+#[derive(Clone, Debug)]
 pub struct Params<E: Pairing> {
     pub g: <E as Pairing>::G1Affine,
     pub h: <E as Pairing>::G2Affine,

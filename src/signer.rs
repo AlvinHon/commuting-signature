@@ -1,3 +1,5 @@
+//! Defines the `Signer` struct and its methods.
+
 use ark_ec::pairing::Pairing;
 use ark_std::rand::Rng;
 

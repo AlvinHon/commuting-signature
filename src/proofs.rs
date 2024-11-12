@@ -11,9 +11,12 @@ use crate::{
     Message, Params,
 };
 
-/// (pi_*, pi_b, pi_r)
+/// (pi_*, pi_b, pi_r), the proofs commonly used in the proof adaptation alogrithms.
+#[derive(Clone, Debug)]
 pub struct Proofs<E: Pairing>(pub Proof<E>, pub Proof<E>, pub Proof<E>);
 
+/// The proofs (pi_a, pi_b, pi_r), used in the proof adaptation algorithms for the
+/// equations `E_a`, `E_b`, and `E_r`.
 #[derive(Clone, Debug)]
 pub struct AdaptProof<E: Pairing> {
     pi_a: Proof<E>,

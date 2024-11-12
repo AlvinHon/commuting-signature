@@ -1,3 +1,5 @@
+//! Defines the `SigCom` algorithm to commit on a signature, and the related structures.
+
 use ark_ec::pairing::Pairing;
 use ark_std::rand::Rng;
 use gs_ppe::{Com, Proof, Randomness, Variable};
@@ -94,6 +96,7 @@ pub fn sig_com<E: Pairing, R: Rng>(
 }
 
 /// Commitment on a signature = (A, B, D, R, S).
+#[derive(Clone, Debug)]
 pub struct SigCommitment<E: Pairing> {
     // (c_a, c_b, c_d, c_r, c_s) are commitments on the actual signature = (A, B, D, R, S).
     pub(crate) c_a: Com<<E as Pairing>::G1>,
@@ -174,12 +177,15 @@ impl<E: Pairing> PreSignature<E> {
     }
 }
 
+/// Represents a state that the signature will/is expected to be committed with a randomness.
 pub struct PrecommitSignature<E: Pairing> {
     pub signature: Signature<E>,
     pub randomness: SigRandomness<E>,
 }
 
 impl<E: Pairing> PrecommitSignature<E> {
+    /// Straightforwardly commit on the signature by the given randomness, by using the commitment scheme
+    /// in GS proof system.
     pub fn commit(&self, pp: &Params<E>) -> SigCommitment<E> {
         let Signature { a, b, d, r, s } = self.signature;
         let SigRandomness(alpha, beta, delta, rho, sigma) = self.randomness;
