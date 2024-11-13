@@ -23,7 +23,7 @@ mod test {
         commit::Commitment,
         params::Params,
         proofs::{prove_message, prove_signature, AdaptProof},
-        randomness::{CommitRandomness, SigRandomness},
+        randomness::{CommitRandomness, KeyRandomness, SigRandomness},
         sigcom::{sig_com, PrecommitSignature},
     };
 
@@ -87,10 +87,34 @@ mod test {
 
         // AdPrC
         let pi = AdaptProof::committing_signature(rng, &pp, &vk, &com_m, &committed_sig, &pi_a_bar)
-            .unwrap();
+            .unwrap()
+            .into();
 
         // pi is a proof that com_m contains a commitment to a message s.t. E_a, E_b, E_r
-        assert!(sig_com.verify_proofs(&pp, &vk, &com_m, &pi.into()));
+        assert!(sig_com.verify_proofs(&pp, &vk, &com_m, &pi));
+
+        // AdPrC_K
+        let key_randomness = KeyRandomness::rand(rng);
+        let pi_a_cap =
+            AdaptProof::committing_key(rng, &pp, &vk, key_randomness, &com_m, &sig_com, &pi)
+                .unwrap()
+                .into();
+
+        // AdPrDC_K
+        let pi = AdaptProof::decommitting_key(
+            rng,
+            &pp,
+            &vk,
+            key_randomness,
+            &com_m,
+            &sig_com,
+            &pi_a_cap,
+        )
+        .unwrap()
+        .into();
+
+        // check pi_a is valid component of the proof pi.
+        assert!(sig_com.verify_proofs(&pp, &vk, &com_m, &pi));
     }
 
     // Test the lower flow of commuting signatures illustrated in Figure 1 of the paper.

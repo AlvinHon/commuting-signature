@@ -76,3 +76,24 @@ impl<E: Pairing> Add for SigRandomness<E> {
         )
     }
 }
+
+/// (xi, psi), the randomness used in the key commitment.
+#[derive(Copy, Clone, Debug)]
+pub struct KeyRandomness<E: Pairing>(
+    pub Randomness<<E as Pairing>::G1>,
+    pub Randomness<<E as Pairing>::G2>,
+);
+
+impl<E: Pairing> KeyRandomness<E> {
+    pub fn rand<R: Rng>(rng: &mut R) -> Self {
+        Self(Randomness::rand(rng), Randomness::rand(rng))
+    }
+}
+
+impl<E: Pairing> Add for KeyRandomness<E> {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        Self(self.0 + other.0, self.1 + other.1)
+    }
+}

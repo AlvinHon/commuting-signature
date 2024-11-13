@@ -183,3 +183,41 @@ pub(crate) fn equation_a_bar_from_rhs<E: Pairing>(
             + E::pairing(pp.pps.t, s),
     )
 }
+
+/// Define E_a_cap(A, M; S, Y, D) : e(T^-1, S) e(M, H^-1) e(A, Y) e(A, D) = e(K, H),
+/// where A, M, S, D, Y are variables X1, X2, Y1, Y2, and Y3.
+///
+/// Formula in section 8.3 of the paper.
+pub(crate) fn equation_a_cap<E: Pairing>(pp: &Params<E>) -> Equation<E> {
+    // From GS Proof notation:
+    // e(A1, Y1) e(A2, Y2) e(A3, Y3) e(X1, B1) e(X2, B2) e(X1, Y2)^1 e(X1, Y3)^1
+    // -> e(t^-1, s) e(0, d) e(0, y) e(a, 0) e(m, h^-1) e(a, d)^1 e(a, y)^1
+    //
+    // so we have A1 = t^-1, A2 = 0, A3 = 0, B1 = 0, B2 = h^-1,
+    // Y1 = s, Y2 = d, Y3 = y, X1 = a, X2 = m
+    // gamma is matrix of (2 x 3) = [[0, 1, 1], [0, 0, 0]]
+    Equation::<E>::new(
+        vec![
+            pp.pps.t.mul(E::ScalarField::one().neg()).into(),
+            <E as Pairing>::G1Affine::zero(),
+            <E as Pairing>::G1Affine::zero(),
+        ],
+        vec![
+            <E as Pairing>::G2Affine::zero(),
+            pp.pps.h.mul(E::ScalarField::one().neg()).into(),
+        ],
+        Matrix::new(&[
+            [
+                E::ScalarField::zero(),
+                E::ScalarField::one(),
+                E::ScalarField::one(),
+            ],
+            [
+                E::ScalarField::zero(),
+                E::ScalarField::zero(),
+                E::ScalarField::zero(),
+            ],
+        ]),
+        E::pairing(pp.pps.k, pp.pps.h),
+    )
+}
