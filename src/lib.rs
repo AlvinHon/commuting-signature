@@ -18,6 +18,8 @@ pub use verifier::Verifier;
 
 #[cfg(test)]
 mod test {
+    use crate::sigcom::sm_sig_com;
+
     use super::{
         automorphic_signature::{self, Message},
         commit::Commitment,
@@ -158,5 +160,26 @@ mod test {
         // Both proofs generated from different paths should be valid.
         assert!(sig_com.verify_proofs(&pp, &vk, &c, &pi_1.into()));
         assert!(sig_com.verify_proofs(&pp, &vk, &c, &pi_2.into()));
+    }
+
+    #[test]
+    fn test_sm_sig_com() {
+        let rng = &mut test_rng();
+        let pp = Params::rand_ex(rng);
+        let (vk, sk) = automorphic_signature::key_gen(rng, &pp.pps);
+        let mn = Message::new(&pp.pps, Fr::rand(rng));
+
+        // (tau, mu, nu, rho, sigma)
+        let com_randomness = CommitRandomness::rand(rng);
+
+        // Com_M
+        let com_m = Commitment::<E>::new(rng, &pp, &mn, com_randomness);
+        assert!(com_m.verify_proofs(&pp));
+
+        let sig = sk.sign(rng, &pp.pps, &mn);
+
+        // SmSigCom
+        let (sig_com, proofs) = sm_sig_com(rng, &pp, &vk, &com_m, &sig).unwrap();
+        assert!(sig_com.verify_proofs(&pp, &vk, &com_m, &proofs));
     }
 }

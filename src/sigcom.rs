@@ -95,6 +95,96 @@ pub fn sig_com<E: Pairing, R: Rng>(
     ))
 }
 
+/// The function `SmSigCom` to commit on a signature. It takes a Com commitment and a verifying key,
+/// and produces a verifiably encrypted signature on the committed value.
+///
+/// ## Panics
+/// panics if the parameters `pp` does not contain the extraction key `ek`.
+pub fn sm_sig_com<E: Pairing, R: Rng>(
+    rng: &mut R,
+    pp: &Params<E>,
+    vk: &VerifyingKey<E>,
+    c: &Commitment<E>,
+    sig: &Signature<E>,
+) -> Option<(SigCommitment<E>, Proofs<E>)> {
+    let ek = pp.ek.unwrap();
+    // verify pi_mn, pi_pq, pi_u
+    if !c.verify_proofs(pp) {
+        return None;
+    }
+
+    let y = vk.1;
+    let Signature { a, b, d, r, s } = *sig;
+    // (rho and sigma are not used because the later computed commitments `c_r` and `c_s` have already contained the actual randomness `rho` and `sigma`.
+    let SigRandomness(alpha, beta, delta, _rho, _sigma) = SigRandomness::<E>::rand(rng);
+
+    // c_a = Com(ck, A, rand_a)
+    let var_a = Variable::with_randomness(a, alpha);
+    let c_a = pp.cks.u.commit(&var_a);
+    // c_b = Com(ck, F^c, rand_b)
+    let var_b = Variable::with_randomness(b, beta);
+    let c_b = pp.cks.u.commit(&var_b);
+    // c_d = Com(ck, H^c, rand_d)
+    let var_d = Variable::with_randomness(d, delta);
+    let c_d = pp.cks.v.commit(&var_d);
+
+    // extract P and Q
+    let p = ek.extract_1(&c.c_p);
+    let q = ek.extract_2(&c.c_q);
+
+    // c_r = c_p + Com(ck, R + P^-1, 0)
+    let var_rp1 = Variable::with_randomness((r - p).into(), Randomness::zero());
+    let c_r = c.c_p + pp.cks.u.commit(&var_rp1);
+    // c_s = c_q + Com(ck, S + Q^-1, 0)
+    let var_sq1 = Variable::with_randomness((s - q).into(), Randomness::zero());
+    let c_s = c.c_q + pp.cks.v.commit(&var_sq1);
+
+    // X1 = a, and Y1 = d
+    let e_at = equations::equation_at(y);
+    // pi_a_prime = pi_u + Prove(ck, E_at, (a, rand_a), (d, rand_d))
+    let mut pi_a = c.pi_u.clone() + Proof::<E>::new(rng, &pp.cks, &e_at, &[var_a], &[var_d]);
+
+    // X1 = a, X2 = m, Y1 = s, and Y2 = d
+    let e_a = equations::equation_a(pp, y);
+    // pi_a = RdProof(ck, E_a, (c_a, 0), (c_d, 0), (c_m, 0), (c_s, rand_s), pi_a_prime)
+    pi_a.randomize(
+        rng,
+        &pp.cks,
+        &e_a,
+        &[(c_a, Randomness::zero()), (c.c_m, Randomness::zero())],
+        &[(c_s, Randomness::zero()), (c_d, Randomness::zero())], // different from SigCom, sigma is not used.
+    );
+
+    // ***
+    // X1 = b, and Y1 = d
+    let e_b = equations::equation_b(pp);
+    // pi_b =  Prove(ck, E_dh, (b, rand_b), (d, rand_d))
+    let pi_b = Proof::<E>::new(rng, &pp.cks, &e_b, &[var_b], &[var_d]);
+
+    // X1 = R, Y1 = S
+    let e_r = equations::equation_dh(pp);
+    // pi_r = RdProof(ck, E_r = E_dh, (c_r, rand_r), (c_s, rand_s), pi_p)
+    let mut pi_r = c.pi_pq.clone();
+    pi_r.randomize(
+        rng,
+        &pp.cks,
+        &e_r,
+        &[(c_r, Randomness::zero())], // different from SigCom, rho is not used.
+        &[(c_s, Randomness::zero())], // different from SigCom, sigma is not used.
+    );
+
+    Some((
+        SigCommitment {
+            c_a,
+            c_b,
+            c_d,
+            c_r,
+            c_s,
+        },
+        Proofs(pi_a, pi_b, pi_r),
+    ))
+}
+
 /// Commitment on a signature = (A, B, D, R, S).
 #[derive(Clone, Debug)]
 pub struct SigCommitment<E: Pairing> {
