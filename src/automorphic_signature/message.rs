@@ -1,7 +1,11 @@
+//! Defines the [Message] struct for the automorphic signatures.
+
 use super::{DHGenerators, VerifyingKey};
 use ark_ec::pairing::Pairing;
 use std::ops::{Add, Mul};
 
+/// Represents a message in the automorphic signatures.
+#[derive(Clone, Debug)]
 pub struct Message<E: Pairing>(
     pub(crate) <E as Pairing>::G1Affine,
     pub(crate) <E as Pairing>::G2Affine,

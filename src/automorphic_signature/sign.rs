@@ -1,3 +1,5 @@
+//! Defines the [SigningKey] struct for the automorphic signatures.
+
 use ark_ec::pairing::Pairing;
 use ark_std::{rand::Rng, One, UniformRand};
 use std::ops::Mul;
@@ -7,6 +9,8 @@ use super::{
     VerifyingKey,
 };
 
+/// The signing key for the automorphic signatures, can be used in Scheme 1 and Scheme 2.
+#[derive(Clone, Debug)]
 pub struct SigningKey<E: Pairing> {
     pub(crate) x: E::ScalarField,
 }
@@ -18,6 +22,7 @@ impl<E: Pairing> SigningKey<E> {
         }
     }
 
+    /// Get the verifying key from the signing key.
     pub fn verifying_key<G: DHGenerators<E>>(&self, grs: &G) -> VerifyingKey<E> {
         VerifyingKey(grs.g().mul(self.x).into(), grs.h().mul(self.x).into())
     }

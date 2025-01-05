@@ -1,8 +1,12 @@
+//! Defines verifying key struct [VerifyingKey] for the automorphic signatures.
+
 use ark_ec::pairing::Pairing;
 use std::ops::Mul;
 
 use super::{message::Message, Params, ParamsEx, Signature, SignatureEx, Signatures};
 
+/// Verifying key for the automorphic signatures.
+#[derive(Clone, Debug)]
 pub struct VerifyingKey<E: Pairing>(pub <E as Pairing>::G1Affine, pub <E as Pairing>::G2Affine);
 
 impl<E: Pairing> VerifyingKey<E> {
