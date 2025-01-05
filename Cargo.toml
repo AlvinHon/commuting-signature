@@ -21,3 +21,8 @@ gs-ppe = { git = "https://github.com/AlvinHon/gs-ppe"}
 
 [dev-dependencies]
 ark-bls12-381 = "0.5"
+criterion = "0.5"
+
+[[bench]]
+name = "bench"
+harness = false
