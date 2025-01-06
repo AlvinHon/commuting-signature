@@ -7,7 +7,7 @@ use super::{message::Message, Params, ParamsEx, Signature, SignatureEx, Signatur
 
 /// Verifying key for the automorphic signatures.
 #[derive(Clone, Debug)]
-pub struct VerifyingKey<E: Pairing>(pub <E as Pairing>::G1Affine, pub <E as Pairing>::G2Affine);
+pub struct VerifyingKey<E: Pairing>(pub <E as Pairing>::G1, pub <E as Pairing>::G2);
 
 impl<E: Pairing> VerifyingKey<E> {
     /// Verifying function `Ver` defined in Scheme 1. Verifies a signature on a message (M, N) = (G^m, H^m) in DH.

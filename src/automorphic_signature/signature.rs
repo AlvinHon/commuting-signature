@@ -7,11 +7,11 @@ use super::VerifyingKey;
 /// Signature created by a signing algorithm in scheme 1.
 #[derive(Clone, Debug)]
 pub struct Signature<E: Pairing> {
-    pub(crate) a: <E as Pairing>::G1Affine,
-    pub(crate) b: <E as Pairing>::G1Affine,
-    pub(crate) d: <E as Pairing>::G2Affine,
-    pub(crate) r: <E as Pairing>::G1Affine,
-    pub(crate) s: <E as Pairing>::G2Affine,
+    pub(crate) a: <E as Pairing>::G1,
+    pub(crate) b: <E as Pairing>::G1,
+    pub(crate) d: <E as Pairing>::G2,
+    pub(crate) r: <E as Pairing>::G1,
+    pub(crate) s: <E as Pairing>::G2,
 }
 
 /// Signature created by the signing algorithm (that signs two messages) in scheme 1.
@@ -27,9 +27,9 @@ pub struct Signatures<E: Pairing> {
 /// Signature created by a signing algorithm in scheme 2.
 #[derive(Clone, Debug)]
 pub struct SignatureEx<E: Pairing> {
-    pub(crate) a: <E as Pairing>::G1Affine,
-    pub(crate) b: <E as Pairing>::G1Affine,
-    pub(crate) d: <E as Pairing>::G2Affine,
-    pub(crate) r: <E as Pairing>::G1Affine,
-    pub(crate) s: <E as Pairing>::G2Affine,
+    pub(crate) a: <E as Pairing>::G1,
+    pub(crate) b: <E as Pairing>::G1,
+    pub(crate) d: <E as Pairing>::G2,
+    pub(crate) r: <E as Pairing>::G1,
+    pub(crate) s: <E as Pairing>::G2,
 }

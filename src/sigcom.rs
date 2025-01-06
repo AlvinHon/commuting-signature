@@ -34,18 +34,18 @@ pub fn sig_com<E: Pairing, R: Rng>(
 
     // a = (K + T^r + U)^(1 / (X + C))
     // c_a = Com(ck, A, rand_a)
-    let var_a = Variable::with_randomness(a, alpha);
+    let var_a = Variable::with_randomness(a.into(), alpha);
     let c_a = pp.cks.u.commit(&var_a);
     // c_b = Com(ck, F^c, rand_b)
-    let var_b = Variable::with_randomness(b, beta);
+    let var_b = Variable::with_randomness(b.into(), beta);
     let c_b = pp.cks.u.commit(&var_b);
     // c_d = Com(ck, H^c, rand_d)
-    let var_d = Variable::with_randomness(d, delta);
+    let var_d = Variable::with_randomness(d.into(), delta);
     let c_d = pp.cks.v.commit(&var_d);
     // c_r = c_p + Com(ck, G^r, rand_r)
-    let c_r = c.c_p + pp.cks.u.commit(&Variable::with_randomness(r, rho));
+    let c_r = c.c_p + pp.cks.u.commit(&Variable::with_randomness(r.into(), rho));
     // c_s = c_q + Com(ck, H^r, rand_s)
-    let c_s = c.c_q + pp.cks.v.commit(&Variable::with_randomness(s, sigma));
+    let c_s = c.c_q + pp.cks.v.commit(&Variable::with_randomness(s.into(), sigma));
 
     // X1 = a, and Y1 = d
     let e_at = equations::equation_at(y);
@@ -119,13 +119,13 @@ pub fn sm_sig_com<E: Pairing, R: Rng>(
     let SigRandomness(alpha, beta, delta, _rho, _sigma) = SigRandomness::<E>::rand(rng);
 
     // c_a = Com(ck, A, rand_a)
-    let var_a = Variable::with_randomness(a, alpha);
+    let var_a = Variable::with_randomness(a.into(), alpha);
     let c_a = pp.cks.u.commit(&var_a);
     // c_b = Com(ck, F^c, rand_b)
-    let var_b = Variable::with_randomness(b, beta);
+    let var_b = Variable::with_randomness(b.into(), beta);
     let c_b = pp.cks.u.commit(&var_b);
     // c_d = Com(ck, H^c, rand_d)
-    let var_d = Variable::with_randomness(d, delta);
+    let var_d = Variable::with_randomness(d.into(), delta);
     let c_d = pp.cks.v.commit(&var_d);
 
     // extract P and Q
@@ -228,11 +228,11 @@ pub struct PreSignature<E: Pairing> {
     // (alpha, beta, delta, rho', sigma')
     pub(crate) sig_randomness: SigRandomness<E>,
     // (a, b, d, r', s')
-    pub(crate) a: <E as Pairing>::G1Affine,
-    pub(crate) b: <E as Pairing>::G1Affine,
-    pub(crate) d: <E as Pairing>::G2Affine,
-    pub(crate) r_prime: <E as Pairing>::G1Affine,
-    pub(crate) s_prime: <E as Pairing>::G2Affine,
+    pub(crate) a: <E as Pairing>::G1,
+    pub(crate) b: <E as Pairing>::G1,
+    pub(crate) d: <E as Pairing>::G2,
+    pub(crate) r_prime: <E as Pairing>::G1,
+    pub(crate) s_prime: <E as Pairing>::G2,
 }
 
 impl<E: Pairing> PreSignature<E> {
@@ -249,8 +249,8 @@ impl<E: Pairing> PreSignature<E> {
             a: self.a,
             b: self.b,
             d: self.d,
-            r: (self.r_prime + pp.pps.g.mul(tau)).into(),
-            s: (self.s_prime + pp.pps.h.mul(tau)).into(),
+            r: self.r_prime + pp.pps.g.mul(tau),
+            s: self.s_prime + pp.pps.h.mul(tau),
         };
         let randomness = SigRandomness(
             self.sig_randomness.0,
@@ -280,11 +280,11 @@ impl<E: Pairing> PrecommitSignature<E> {
         let Signature { a, b, d, r, s } = self.signature;
         let SigRandomness(alpha, beta, delta, rho, sigma) = self.randomness;
 
-        let a = Variable::with_randomness(a, alpha);
-        let b = Variable::with_randomness(b, beta);
-        let d = Variable::with_randomness(d, delta);
-        let r = Variable::with_randomness(r, rho);
-        let s = Variable::with_randomness(s, sigma);
+        let a = Variable::with_randomness(a.into(), alpha);
+        let b = Variable::with_randomness(b.into(), beta);
+        let d = Variable::with_randomness(d.into(), delta);
+        let r = Variable::with_randomness(r.into(), rho);
+        let s = Variable::with_randomness(s.into(), sigma);
 
         let c_a = pp.cks.u.commit(&a);
         let c_b = pp.cks.u.commit(&b);

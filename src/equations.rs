@@ -18,7 +18,7 @@ use crate::Params;
 pub(crate) fn equation_dh<E: Pairing>(pp: &Params<E>) -> Equation<E> {
     Equation::<E>::new(
         vec![pp.pps.g.mul(E::ScalarField::one().neg()).into()],
-        vec![pp.pps.h],
+        vec![pp.pps.h.into()],
         Matrix::new(&[[E::ScalarField::zero()]]),
         PairingOutput::zero(),
     )
@@ -27,7 +27,7 @@ pub(crate) fn equation_dh<E: Pairing>(pp: &Params<E>) -> Equation<E> {
 /// E_u: e(T^-1, Y) e(X, H^-1) = e(U, H)^-1
 ///
 /// Formula (11) in section 8.1 of the paper.
-pub(crate) fn equation_u<E: Pairing>(pp: &Params<E>, u: &<E as Pairing>::G1Affine) -> Equation<E> {
+pub(crate) fn equation_u<E: Pairing>(pp: &Params<E>, u: &<E as Pairing>::G1) -> Equation<E> {
     Equation::<E>::new(
         vec![pp.pps.t.mul(E::ScalarField::one().neg()).into()],
         vec![pp.pps.h.mul(E::ScalarField::one().neg()).into()],
@@ -39,7 +39,7 @@ pub(crate) fn equation_u<E: Pairing>(pp: &Params<E>, u: &<E as Pairing>::G1Affin
 /// Define E_at(A; D) : e(A, Y) e(A, D) = 1, where A and D are variables X1 and Y1.
 ///
 /// Formula (14) in section 8.2 of the paper.
-pub(crate) fn equation_at<E: Pairing>(y: <E as Pairing>::G2Affine) -> Equation<E> {
+pub(crate) fn equation_at<E: Pairing>(y: <E as Pairing>::G2) -> Equation<E> {
     // From GS Proof notation:
     // e(A1, Y1) e(X1, B1) e(X1, Y1)^1
     // -> e(0, d) e(a, y) e(a, d)
@@ -48,7 +48,7 @@ pub(crate) fn equation_at<E: Pairing>(y: <E as Pairing>::G2Affine) -> Equation<E
     // so we have A1 = 0, B1 = y, X1 = a, and Y1 = d
     Equation::<E>::new(
         vec![<E as Pairing>::G1Affine::zero()],
-        vec![y],
+        vec![y.into()],
         Matrix::new(&[[E::ScalarField::one()]]),
         PairingOutput::zero(),
     )
@@ -58,7 +58,7 @@ pub(crate) fn equation_at<E: Pairing>(y: <E as Pairing>::G2Affine) -> Equation<E
 /// where A, M, S, and D are variables X1, X2, Y1, and Y2.
 ///
 /// Formula (12) in section 8.2 of the paper.
-pub(crate) fn equation_a<E: Pairing>(pp: &Params<E>, y: <E as Pairing>::G2Affine) -> Equation<E> {
+pub(crate) fn equation_a<E: Pairing>(pp: &Params<E>, y: <E as Pairing>::G2) -> Equation<E> {
     // From GS Proof notation:
     // e(A1, Y1) e(A2, Y2) e(X1, B1) e(X2, B2) e(X1, Y2)^1
     // -> e(t^-1, s) e(0, d) e(a, y) e(m, h^-1) e(a, d)
@@ -72,7 +72,7 @@ pub(crate) fn equation_a<E: Pairing>(pp: &Params<E>, y: <E as Pairing>::G2Affine
             pp.pps.t.mul(E::ScalarField::one().neg()).into(),
             <E as Pairing>::G1Affine::zero(),
         ],
-        vec![y, pp.pps.h.mul(E::ScalarField::one().neg()).into()],
+        vec![y.into(), pp.pps.h.mul(E::ScalarField::one().neg()).into()],
         Matrix::new(&[
             [E::ScalarField::zero(), E::ScalarField::one()],
             [E::ScalarField::zero(), E::ScalarField::zero()],
@@ -87,7 +87,7 @@ pub(crate) fn equation_a<E: Pairing>(pp: &Params<E>, y: <E as Pairing>::G2Affine
 pub(crate) fn equation_b<E: Pairing>(pp: &Params<E>) -> Equation<E> {
     Equation::<E>::new(
         vec![pp.pps.f.mul(E::ScalarField::one().neg()).into()],
-        vec![pp.pps.h],
+        vec![pp.pps.h.into()],
         Matrix::new(&[[E::ScalarField::zero()]]),
         PairingOutput::zero(),
     )
@@ -101,10 +101,10 @@ pub(crate) fn equation_b<E: Pairing>(pp: &Params<E>) -> Equation<E> {
 /// Formula in section 8.3 of the paper.
 pub(crate) fn equation_a_tide_from_lhs<E: Pairing>(
     pp: &Params<E>,
-    s: <E as Pairing>::G2Affine,
-    a: <E as Pairing>::G1Affine,
-    d: <E as Pairing>::G2Affine,
-    y: <E as Pairing>::G2Affine,
+    s: <E as Pairing>::G2,
+    a: <E as Pairing>::G1,
+    d: <E as Pairing>::G2,
+    y: <E as Pairing>::G2,
 ) -> Equation<E> {
     // From GS Proof notation:
     // e(A1, Y1) e(X1, B1) e(X1, Y2)^1
@@ -115,7 +115,7 @@ pub(crate) fn equation_a_tide_from_lhs<E: Pairing>(
     let t_neg = pp.pps.t.mul(E::ScalarField::one().neg());
     Equation::<E>::new(
         vec![t_neg.into(), <E as Pairing>::G1Affine::zero()],
-        vec![y],
+        vec![y.into()],
         Matrix::new(&[[E::ScalarField::zero(), E::ScalarField::one()]]),
         E::pairing(t_neg, s) + E::pairing(a, y) + E::pairing(a, d),
     )
@@ -129,8 +129,8 @@ pub(crate) fn equation_a_tide_from_lhs<E: Pairing>(
 /// Formula in section 8.3 of the paper.
 pub(crate) fn equation_a_tide_from_rhs<E: Pairing>(
     pp: &Params<E>,
-    y: <E as Pairing>::G2Affine,
-    m: <E as Pairing>::G1Affine,
+    y: <E as Pairing>::G2,
+    m: <E as Pairing>::G1,
 ) -> Equation<E> {
     // From GS Proof notation:
     // e(A1, Y1) e(X1, B1) e(X1, Y2)^1
@@ -141,7 +141,7 @@ pub(crate) fn equation_a_tide_from_rhs<E: Pairing>(
     let t_neg = pp.pps.t.mul(E::ScalarField::one().neg());
     Equation::<E>::new(
         vec![t_neg.into(), <E as Pairing>::G1Affine::zero()],
-        vec![y],
+        vec![y.into()],
         Matrix::new(&[[E::ScalarField::zero(), E::ScalarField::one()]]),
         E::pairing(pp.pps.k + m, pp.pps.h),
     )
@@ -153,7 +153,7 @@ pub(crate) fn equation_a_tide_from_rhs<E: Pairing>(
 /// Formula in section 8.3 of the paper.
 pub(crate) fn equation_a_bar_from_lhs<E: Pairing>(
     pp: &Params<E>,
-    m: <E as Pairing>::G1Affine,
+    m: <E as Pairing>::G1,
 ) -> Equation<E> {
     Equation::<E>::new(
         vec![],
@@ -169,10 +169,10 @@ pub(crate) fn equation_a_bar_from_lhs<E: Pairing>(
 /// Formula in section 8.3 of the paper.
 pub(crate) fn equation_a_bar_from_rhs<E: Pairing>(
     pp: &Params<E>,
-    y: <E as Pairing>::G2Affine,
-    a: <E as Pairing>::G1Affine,
-    d: <E as Pairing>::G2Affine,
-    s: <E as Pairing>::G2Affine,
+    y: <E as Pairing>::G2,
+    a: <E as Pairing>::G1,
+    d: <E as Pairing>::G2,
+    s: <E as Pairing>::G2,
 ) -> Equation<E> {
     Equation::<E>::new(
         vec![],

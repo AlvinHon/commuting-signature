@@ -24,7 +24,7 @@ impl<E: Pairing> SigningKey<E> {
 
     /// Get the verifying key from the signing key.
     pub fn verifying_key<G: DHGenerators<E>>(&self, grs: &G) -> VerifyingKey<E> {
-        VerifyingKey(grs.g().mul(self.x).into(), grs.h().mul(self.x).into())
+        VerifyingKey(grs.g().mul(self.x), grs.h().mul(self.x))
     }
 
     /// Signing function `Sign` defined in Scheme 1. Signs on a message (M, N) = (G^m, H^m) in DH.
@@ -69,7 +69,7 @@ impl<E: Pairing> SigningKey<E> {
         &self,
         rng: &mut R,
         pp: &Params<E>,
-        m: &<E as Pairing>::G1Affine,
+        m: &<E as Pairing>::G1,
     ) -> Signature<E> {
         let rand_c = E::ScalarField::rand(rng);
         let rand_r = E::ScalarField::rand(rng);
@@ -77,12 +77,11 @@ impl<E: Pairing> SigningKey<E> {
         let a = {
             let exp = E::ScalarField::one() / (self.x + rand_c);
             (pp.k + pp.t.mul(rand_r) + m).mul(exp)
-        }
-        .into();
-        let b = pp.f.mul(rand_c).into();
-        let d = pp.h.mul(rand_c).into();
-        let r = pp.g.mul(rand_r).into();
-        let s = pp.h.mul(rand_r).into();
+        };
+        let b = pp.f.mul(rand_c);
+        let d = pp.h.mul(rand_c);
+        let r = pp.g.mul(rand_r);
+        let s = pp.h.mul(rand_r);
 
         Signature { a, b, d, r, s }
     }
@@ -176,12 +175,11 @@ impl<E: Pairing> SigningKey<E> {
         let a = {
             let exp = E::ScalarField::one() / (self.x + rand_c);
             (pp.k + pp.l.mul(v) + pp.t.mul(rand_r) + m).mul(exp)
-        }
-        .into();
-        let b = pp.f.mul(rand_c).into();
-        let d = pp.h.mul(rand_c).into();
-        let r = pp.g.mul(rand_r).into();
-        let s = pp.h.mul(rand_r).into();
+        };
+        let b = pp.f.mul(rand_c);
+        let d = pp.h.mul(rand_c);
+        let r = pp.g.mul(rand_r);
+        let s = pp.h.mul(rand_r);
 
         SignatureEx { a, b, d, r, s }
     }

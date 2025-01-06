@@ -54,20 +54,20 @@ impl<E: Pairing> AdaptProof<E> {
         }
 
         // Compute pi_a_tide.
-        let var_a = Variable::with_randomness(signature.a, alpha);
-        let var_d = Variable::with_randomness(signature.d, delta);
-        let var_s = Variable::with_randomness(signature.s, sigma);
+        let var_a = Variable::with_randomness(signature.a.into(), alpha);
+        let var_d = Variable::with_randomness(signature.d.into(), delta);
+        let var_s = Variable::with_randomness(signature.s.into(), sigma);
         let eq_a_tide =
             equations::equation_a_tide_from_lhs(pp, signature.s, signature.a, signature.d, y);
         let pi_a_tide = Proof::new(rng, &pp.cks, &eq_a_tide, &[var_a], &[var_s, var_d]);
 
         // Compute pi_b.
-        let var_b = Variable::with_randomness(signature.b, beta);
+        let var_b = Variable::with_randomness(signature.b.into(), beta);
         let eq_b = equations::equation_b(pp);
         let pi_b = Proof::new(rng, &pp.cks, &eq_b, &[var_b], &[var_d]);
 
         // Compute pi_r.
-        let var_r = Variable::with_randomness(signature.r, rho);
+        let var_r = Variable::with_randomness(signature.r.into(), rho);
         let eq_r = equations::equation_dh(pp);
         let pi_r = Proof::new(rng, &pp.cks, &eq_r, &[var_r], &[var_s]);
 
@@ -101,7 +101,7 @@ impl<E: Pairing> AdaptProof<E> {
         }
 
         let eq_a_bar = equations::equation_a_bar_from_lhs(pp, mn.0);
-        let var_m = Variable::with_randomness(mn.0, mu);
+        let var_m = Variable::with_randomness(mn.0.into(), mu);
         let pi_a_bar = Proof::new(rng, &pp.cks, &eq_a_bar, &[var_m], &[]);
 
         Some(Self {
@@ -132,7 +132,7 @@ impl<E: Pairing> AdaptProof<E> {
         let y = vk.1;
         let mut pi_a_cap = pi.0.clone();
 
-        let var_y = Variable::with_zero_randomness(y);
+        let var_y = Variable::with_zero_randomness(y.into());
         let c_y = pp.cks.v.commit(&var_y);
 
         let eq_a_cap = equations::equation_a_cap(pp);
@@ -184,9 +184,9 @@ impl<E: Pairing> AdaptProof<E> {
         let SigRandomness(alpha, _, delta, _, sigma) = *randomness;
         let Proofs(pi_a, _, _) = pi;
 
-        let var_a = Variable::with_randomness(signature.a, alpha);
-        let var_d = Variable::with_randomness(signature.d, delta);
-        let var_s = Variable::with_randomness(signature.s, sigma);
+        let var_a = Variable::with_randomness(signature.a.into(), alpha);
+        let var_d = Variable::with_randomness(signature.d.into(), delta);
+        let var_s = Variable::with_randomness(signature.s.into(), sigma);
         let eq_a_tide =
             equations::equation_a_tide_from_lhs(pp, signature.s, signature.a, signature.d, y);
         let pi_a_tide = Proof::new(rng, &pp.cks, &eq_a_tide, &[var_a], &[var_s, var_d]);
@@ -215,7 +215,7 @@ impl<E: Pairing> AdaptProof<E> {
         let Proofs(pi_a, pi_b, pi_r) = pi;
 
         let eq_a_bar = equations::equation_a_bar_from_lhs(pp, mn.0);
-        let var_m = Variable::with_randomness(mn.0, mu);
+        let var_m = Variable::with_randomness(mn.0.into(), mu);
         let pi_a_bar = Proof::new(rng, &pp.cks, &eq_a_bar, &[var_m], &[]);
         Some(Self {
             pi_a: pi_a.clone() / pi_a_bar,
@@ -239,7 +239,7 @@ impl<E: Pairing> AdaptProof<E> {
         let Proofs(pi_a_cap, pi_b, pi_r) = pi_a_cap;
         let eq_a_cap = equations::equation_a_cap(pp);
 
-        let var_y = Variable::with_randomness(y, randomness.1);
+        let var_y = Variable::with_randomness(y.into(), randomness.1);
         let c_y = pp.cks.v.commit(&var_y);
 
         // Verify the proof pi_a_cap that the commitment to the public key with the message/signature commitments s.t. E_a_cap.
@@ -300,7 +300,7 @@ pub(crate) fn prove_message<E: Pairing, R: Rng>(
         rng,
         &pp.cks,
         &equ_a_bar,
-        &[Variable::with_randomness(m, mu)],
+        &[Variable::with_randomness(m.into(), mu)],
         &[],
     )
 }
@@ -321,19 +321,19 @@ pub(crate) fn prove_signature<E: Pairing, R: Rng>(
     } = committed_sig;
     let SigRandomness(alpha, beta, delta, rho, sigma) = *randomness;
 
-    let var_a = Variable::with_randomness(signature.a, alpha);
-    let var_d = Variable::with_randomness(signature.d, delta);
-    let var_s = Variable::with_randomness(signature.s, sigma);
+    let var_a = Variable::with_randomness(signature.a.into(), alpha);
+    let var_d = Variable::with_randomness(signature.d.into(), delta);
+    let var_s = Variable::with_randomness(signature.s.into(), sigma);
     let equ_a_tide =
         equations::equation_a_tide_from_lhs(pp, signature.s, signature.a, signature.d, y);
     let pi_a_tide = Proof::new(rng, &pp.cks, &equ_a_tide, &[var_a], &[var_s, var_d]);
 
-    let var_b = Variable::with_randomness(signature.b, beta);
+    let var_b = Variable::with_randomness(signature.b.into(), beta);
     let equ_b = equations::equation_b(pp);
     let pi_b = Proof::new(rng, &pp.cks, &equ_b, &[var_b], &[var_d]);
 
     let equ_r = equations::equation_dh(pp);
-    let var_r = Variable::with_randomness(signature.r, rho);
+    let var_r = Variable::with_randomness(signature.r.into(), rho);
     let pi_r = Proof::new(rng, &pp.cks, &equ_r, &[var_r], &[var_s]);
 
     Proofs(pi_a_tide, pi_b, pi_r)

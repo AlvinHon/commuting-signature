@@ -20,7 +20,7 @@ pub struct Commitment<E: Pairing> {
     pub(crate) c_q: Com<<E as Pairing>::G2>,
     pub(crate) pi_pq: Proof<E>,
 
-    pub(crate) u: <E as Pairing>::G1Affine,
+    pub(crate) u: <E as Pairing>::G1,
     pub(crate) pi_u: Proof<E>,
 }
 
@@ -37,8 +37,8 @@ impl<E: Pairing> Commitment<E> {
 
         let pq = Message::<E>::new(&pp.pps, tau);
 
-        let m = Variable::with_randomness(mn.0, mu);
-        let n = Variable::with_randomness(mn.1, nu);
+        let m = Variable::with_randomness(mn.0.into(), mu);
+        let n = Variable::with_randomness(mn.1.into(), nu);
         // c_m = Com(ck, M, _)
         let c_m = pp.cks.u.commit(&m);
         // c_n = Com(ck, N, _)
@@ -47,8 +47,8 @@ impl<E: Pairing> Commitment<E> {
         let equation_dh = equations::equation_dh(pp);
         let pi_mn = Proof::new(rng, &pp.cks, &equation_dh, &[m], &[n]);
 
-        let p = Variable::with_randomness(pq.0, rho);
-        let q = Variable::with_randomness(pq.1, sigma);
+        let p = Variable::with_randomness(pq.0.into(), rho);
+        let q = Variable::with_randomness(pq.1.into(), sigma);
         // c_p = Com(ck, P, _)
         let c_p = pp.cks.u.commit(&p);
         // c_q = Com(ck, Q, _)
@@ -58,7 +58,7 @@ impl<E: Pairing> Commitment<E> {
         let pi_pq = Proof::new(rng, &pp.cks, &equation_pq, &[p], &[q]);
 
         // u = T^t + M
-        let u = (pp.pps.t.mul(tau) + m.value).into();
+        let u = pp.pps.t.mul(tau) + m.value;
 
         // pi_u = Prove(ck, E_u, (M, _), (Q, _))
         let equation_u = equations::equation_u(pp, &u);
@@ -90,7 +90,7 @@ impl<E: Pairing> Commitment<E> {
             + pp.cks.v.commit(&Variable::<_>::with_zero_randomness(
                 pp.pps.h.mul(scalar_t_prime).into(),
             ));
-        let u_prime = (self.u + pp.pps.t.mul(scalar_t_prime)).into();
+        let u_prime = self.u + pp.pps.t.mul(scalar_t_prime);
 
         // c_m' = RdCom(ck, c_m, _)
         // c_n' = RdCom(ck, c_n, _)
